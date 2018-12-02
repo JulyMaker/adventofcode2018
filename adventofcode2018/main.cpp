@@ -38,7 +38,7 @@ void YELLOW()
 void RESET()
 {
     cout << flush;
-    SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+    SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 }
 
 
@@ -167,6 +167,91 @@ int day1_2(const stringlist& lines)
 }
 
 
+// -------------------------------------------------------------------
+int day2(const stringlist& lines)
+{
+    int numdoubles = 0;
+    int numtriples = 0;
+
+    for (auto line : lines)
+    {
+        const int numletters = 26;
+        int seencount[numletters];
+        memset(seencount, 0, sizeof(seencount));
+
+        for (auto c : line)
+        {
+            int ix = c - 'a';
+            seencount[ix]++;
+        }
+
+        int dub = 0;
+        int trip = 0;
+        for (int c = 0; c < numletters; ++c)
+        {
+            if (seencount[c] == 2)
+                dub = 1;
+            else if (seencount[c] == 3)
+                trip = 1;
+
+            if (dub + trip == 2)
+                break;
+        }
+        numdoubles += dub;
+        numtriples += trip;
+    }
+
+    return numdoubles * numtriples;
+}
+
+// returns the index of characters that are mismatched, or <0 if strings don't differ by a single char
+int d2_compare(const string& a, const string& b)
+{
+    int diffpos = -1;
+
+    auto ita = a.begin();
+    auto itb = b.begin();
+    for (; ita != a.end(); ++ita, ++itb)
+    {
+        if (*ita != *itb)
+        {
+            // >1 difference
+            if (diffpos >= 0)
+                return -1;
+
+            diffpos = distance(a.begin(), ita);
+        }
+    }
+
+    return diffpos;
+}
+
+string day2_2(const stringlist& lines)
+{
+    for (auto itline = lines.begin(); itline != lines.end(); ++itline)
+    {
+        const string& teststr = *itline;
+        for (auto ittest = lines.begin(); ittest != itline; ++ittest)
+        {
+            int diff = d2_compare(teststr, *ittest);
+            if (diff < 0)
+                continue;
+
+            // found it!!
+            {
+                string common = teststr.substr(0, diff);
+                common += teststr.substr(diff + 1);
+                return common;
+            }
+        }
+    }
+
+    return "oh dear";
+}
+
+// -------------------------------------------------------------------
+
+
 int main()
 {
     initcolours();
@@ -184,6 +269,12 @@ int main()
     test(5, day1_2(stringlist::fromstring("-6\n+3\n+8\n+5\n-6")));
     test(14, day1_2(stringlist::fromstring("+7\n+7\n-2\n-7\n-4")));
     gogogo(day1_2(stringlist::fromfile("day1.txt")));
+
+    test(12, day2(stringlist::fromstring("abcdef\nbababc\nabbcde\nabcccd\naabcdd\nabcdee\nababab")));
+    gogogo(day2(stringlist::fromfile("day2.txt")));
+
+    test<string>("fgij", day2_2(stringlist::fromstring("abcde\nfghij\nklmno\npqrst\nfguij\naxcye\nwvxyz")));
+    gogogo(day2_2(stringlist::fromfile("day2.txt")));
 
     return 0;
 }

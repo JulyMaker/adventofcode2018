@@ -20,28 +20,52 @@ void initcolours()
 {
     hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
 }
-void RED()
+
+inline ostream&     RED(ostream& _Ostr)
 {
-    cout << flush;
+    _Ostr.flush();
     SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | FOREGROUND_INTENSITY);
+    return (_Ostr);
 }
-void GREEN()
+inline ostream&     GREEN(ostream& _Ostr)
 {
-    cout << flush;
+    _Ostr.flush();
     SetConsoleTextAttribute(hStdOut, FOREGROUND_GREEN);
+    return (_Ostr);
 }
-void YELLOW()
+inline ostream&     YELLOW(ostream& _Ostr)
 {
-    cout << flush;
+    _Ostr.flush();
     SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+    return (_Ostr);
 }
-void RESET()
+inline ostream&     RESET(ostream& _Ostr)
 {
-    cout << flush;
+    _Ostr.flush();
     SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+    return (_Ostr);
 }
 
-
+// GARLAND!
+struct Garland
+{
+    int length;
+    Garland(int length) : length(length) {/**/}
+};
+inline Garland GARLAND(int length)
+{
+    return Garland(length);
+}
+inline ostream& operator<<(ostream& os, const Garland& g)
+{
+    os << YELLOW << "**";
+    for( int i=0; i<g.length; ++i)
+    {
+        os << RED << "o" << YELLOW << "*" << GREEN << "o" << YELLOW << "*";
+    }
+    os << "*" << RESET;
+    return os;
+}
 
 
 
@@ -85,16 +109,11 @@ bool test(TResult result, TResult shouldbe)
 
     if (result == shouldbe)
     {
-        GREEN();
-        cout << "PASS";
-        RESET();
+        cout << GREEN << "PASS" << RESET;
     }
     else
     {
-        RED();
-        cout << "FAIL";
-        RESET();
-        cout << ": should be " << shouldbe << ", result was " << result;
+        cout << RED << "FAIL" << RESET << ": should be " << shouldbe << ", result was " << result;
     }
 
     cout << endl;
@@ -105,10 +124,7 @@ bool test(TResult result, TResult shouldbe)
 template<typename TResult>
 void gogogo(TResult result)
 {
-    cout << "day" << gday << ",p" << gpart << ": FINAL RESULT: ";
-    YELLOW();
-    cout << result << endl;
-    RESET();
+    cout << "day" << gday << ",p" << gpart << ": FINAL RESULT: " << YELLOW << result << RESET << endl;
 
     if (gpart == 2)
     {
@@ -119,7 +135,7 @@ void gogogo(TResult result)
         gpart++;
 
     gtest = 1;
-    cout << "--=--=--=--=--=--=--=--=--=--=--=--=--=--\n" << endl;
+    cout << "\n" << GARLAND(4) << endl;
 }
 
 
@@ -256,7 +272,7 @@ int main()
 {
     initcolours();
 
-    cout << "o*o*o*O  advent of code 2018  O*o*o*o\n\n" << endl;
+    cout << GARLAND(2) << "  advent of code 2018  " << GARLAND(2) << endl;
 
     test(3, day1(stringlist::fromstring("+1\n-2\n+3\n+1")));
     test(3, day1(stringlist::fromstring("+1\n+1\n+1")));

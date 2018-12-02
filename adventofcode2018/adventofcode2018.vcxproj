@@ -142,6 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="harness.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -150,6 +151,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\festiveaf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="harness.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

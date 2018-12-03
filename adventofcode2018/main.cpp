@@ -1,7 +1,9 @@
-#include "harness.h"
+﻿#include "harness.h"
 
 #include <set>
+#include <vector>
 
+#include <conio.h>
 
 
 int day1(const stringlist& lines)
@@ -131,6 +133,102 @@ string day2_2(const stringlist& lines)
 
 // -------------------------------------------------------------------
 
+const WORD kwhite = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+const WORD kgrey = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+const wchar_t* ktwinkles = L"-+x┼x+- ";
+const WORD ktwincols[] = { kgrey, kwhite, kgrey, kwhite, kwhite, kgrey, kgrey, kgrey };
+COORD zerozero = { 0, 0 };
+COORD oneXone = { 1, 1 };
+
+struct Sparkle
+{
+    COORD pos;
+    int t;
+
+    Sparkle() {/**/}
+    Sparkle(COORD p) : pos(p), t(-1)  {/**/}
+
+    bool tick()
+    {
+        t += 1;
+        if (!ktwinkles[t]) return false;
+
+        CHAR_INFO c;
+        c.Char.UnicodeChar = ktwinkles[t];
+        c.Attributes = ktwincols[t];
+        SMALL_RECT rect = { pos.X, pos.Y, 3000, 3000 };
+        WriteConsoleOutput(hStdOut, &c, oneXone, zerozero, &rect);
+
+        return true;
+    }
+};
+
+int twinkleforever()
+{
+    COORD zerozero = { 0, 0 };
+
+    // step 1. read back current screen
+    CONSOLE_SCREEN_BUFFER_INFOEX screeninfo;
+    screeninfo.cbSize = sizeof(screeninfo);
+    if (!GetConsoleScreenBufferInfoEx(hStdOut, &screeninfo))
+    {
+        cerr << "FAILED to read console info: " << GetLastError() << endl;
+        return 1;
+    }
+    size_t bufsize = screeninfo.dwSize.X * screeninfo.dwSize.Y;
+    CHAR_INFO *pscreenbuf = new CHAR_INFO[bufsize];
+    SMALL_RECT readregion = screeninfo.srWindow;
+    if (!ReadConsoleOutput(hStdOut, pscreenbuf, screeninfo.dwSize, zerozero, &readregion))
+    {
+        cerr << "FAILED to read from console: " << GetLastError() << endl;
+        return 1;
+    }
+
+    // step 2: make a big ol' list of all the coords that are free
+    vector<COORD> free;
+    int wndwidth = screeninfo.srWindow.Right - screeninfo.srWindow.Left;
+    int wndheight = screeninfo.srWindow.Bottom - screeninfo.srWindow.Top;
+    size_t i = 0;
+    COORD pos = { 0,0 };
+    for (; pos.Y < wndheight; ++pos.Y)
+    {
+        for (pos.X = 0; pos.X < wndwidth; ++pos.X, ++i)
+        {
+            if (pscreenbuf[i].Char.UnicodeChar == L' ')
+            {
+                free.push_back(pos);
+            }
+        }
+    }
+
+    list<Sparkle> sparkles;
+    uint32_t frame = 0;
+    for (;; ++frame)
+    {
+        // add a new sparkle
+        size_t ipos = rand() % free.size();
+        Sparkle newsparkle(free[ipos]);
+        sparkles.push_back(newsparkle);
+
+        // tick all the sparkles
+        for (auto it = sparkles.begin(); it != sparkles.end(); ++it)
+        {
+            if (!it->tick())
+            {
+                it = sparkles.erase(it);
+            }
+        }
+
+        if (_kbhit())
+            break;
+
+        Sleep(150);
+    }
+
+    return 0;
+}
+
+// -------------------------------------------------------------------
 
 int main()
 {
@@ -148,7 +246,7 @@ int main()
     test(10, day1_2(stringlist::fromstring("+3\n+3\n+4\n-2\n-4")));
     test(5, day1_2(stringlist::fromstring("-6\n+3\n+8\n+5\n-6")));
     test(14, day1_2(stringlist::fromstring("+7\n+7\n-2\n-7\n-4")));
-    gogogo(day1_2(stringlist::fromfile("day1.txt")));
+    nononoD(day1_2(stringlist::fromfile("day1.txt")));
 
     test(12, day2(stringlist::fromstring("abcdef\nbababc\nabbcde\nabcccd\naabcdd\nabcdee\nababab")));
     gogogo(day2(stringlist::fromfile("day2.txt")));
@@ -156,8 +254,7 @@ int main()
     test<string>("fgij", day2_2(stringlist::fromstring("abcde\nfghij\nklmno\npqrst\nfguij\naxcye\nwvxyz")));
     gogogo(day2_2(stringlist::fromfile("day2.txt")));
 
-    // TODO: pri1: animate snow falling behind the characters in the console until someone presses ESC
-
-    return 0;
+    // animate snow falling behind the characters in the console until someone presses a key
+    return twinkleforever();
 }
 

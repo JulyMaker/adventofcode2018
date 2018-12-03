@@ -14,6 +14,7 @@ using namespace std;
 
 
 // ---- COLOUR SHIZ ----
+extern HANDLE hStdIn;
 extern HANDLE hStdOut;
 void initcolours();
 
@@ -34,6 +35,12 @@ inline ostream&     YELLOW(ostream& _Ostr)
 {
     _Ostr.flush();
     SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+    return (_Ostr);
+}
+inline ostream&     GREY(ostream& _Ostr)
+{
+    _Ostr.flush();
+    SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
     return (_Ostr);
 }
 inline ostream&     RESET(ostream& _Ostr)
@@ -138,6 +145,30 @@ void gogogo(TResult result)
     gtest = 1;
     cout << "\n" << GARLAND(4) << endl;
 }
+
+void skip()
+{
+    cout << "day" << gday << ",p" << gpart << YELLOW << " skipped " << RESET << " as it's really slow" << endl;
+
+    if (gpart == 2)
+    {
+        gday++;
+        gpart = 1;
+    }
+    else
+        gpart++;
+
+    gtest = 1;
+    cout << "\n" << GARLAND(4) << endl;
+}
+
+#define nonono(expr) skip()
+
+#ifdef _DEBUG
+#define nononoD(expr) skip()
+#else
+#define nononoD(expr) gogogo(expr)
+#endif
 
 
 

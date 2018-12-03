@@ -15,9 +15,11 @@ using namespace std;
 #include <Windows.h>
 #include <wincon.h>
 
+HANDLE hStdIn;
 HANDLE hStdOut;
 void initcolours()
 {
+    hStdIn = GetStdHandle(STD_INPUT_HANDLE);
     hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
 }
 

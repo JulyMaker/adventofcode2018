@@ -110,7 +110,7 @@ extern int gpart;
 extern int gtest;
 
 template<typename TResult>
-bool test(TResult result, TResult shouldbe)
+bool test(TResult shouldbe, TResult result)
 {
     cout << "day" << gday << ",p" << gpart << ": test " << gtest << ": ";
     gtest++;
@@ -143,24 +143,10 @@ void gogogo(TResult result)
         gpart++;
 
     gtest = 1;
-    cout << "\n" << GARLAND(4) << endl;
+    cout << "\n" << GARLAND(4) << "\n" << endl;
 }
 
-void skip()
-{
-    cout << "day" << gday << ",p" << gpart << YELLOW << " skipped " << RESET << " as it's really slow" << endl;
-
-    if (gpart == 2)
-    {
-        gday++;
-        gpart = 1;
-    }
-    else
-        gpart++;
-
-    gtest = 1;
-    cout << "\n" << GARLAND(4) << endl;
-}
+void skip();
 
 #define nonono(expr) skip()
 
@@ -172,4 +158,6 @@ void skip()
 
 
 
+
+int twinkleforever();
 

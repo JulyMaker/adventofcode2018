@@ -1,10 +1,11 @@
 ﻿#include "harness.h"
 
+#include <ctime>
 #include <set>
 #include <vector>
 
-#include <conio.h>
 
+// -------------------------------------------------------------------
 
 int day1(const stringlist& lines)
 {
@@ -50,6 +51,7 @@ int day1_2(const stringlist& lines)
 
 
 // -------------------------------------------------------------------
+
 int day2(const stringlist& lines)
 {
     int numdoubles = 0;
@@ -133,99 +135,101 @@ string day2_2(const stringlist& lines)
 
 // -------------------------------------------------------------------
 
-const WORD kwhite = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
-const WORD kgrey = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-const wchar_t* ktwinkles = L"-+x┼x+- ";
-const WORD ktwincols[] = { kgrey, kwhite, kgrey, kwhite, kwhite, kgrey, kgrey, kgrey };
-COORD zerozero = { 0, 0 };
-COORD oneXone = { 1, 1 };
+const int d3_clothsz = 1000;
 
-struct Sparkle
+int32_t d3_mark(int16_t* pcloth, int claim, int left, int top, int w, int h, bool* clean)
 {
-    COORD pos;
-    int t;
+    _ASSERT(left + w <= d3_clothsz);
+    _ASSERT(top + h <= d3_clothsz);
 
-    Sparkle() {/**/}
-    Sparkle(COORD p) : pos(p), t(-1)  {/**/}
+    int32_t newoverlap = 0;
+    bool overlap = false;
 
-    bool tick()
+    int16_t* pcurr = pcloth + (top * d3_clothsz) + left;
+    for (int y = top; y < top + h; ++y)
     {
-        t += 1;
-        if (!ktwinkles[t]) return false;
-
-        CHAR_INFO c;
-        c.Char.UnicodeChar = ktwinkles[t];
-        c.Attributes = ktwincols[t];
-        SMALL_RECT rect = { pos.X, pos.Y, 3000, 3000 };
-        WriteConsoleOutput(hStdOut, &c, oneXone, zerozero, &rect);
-
-        return true;
-    }
-};
-
-int twinkleforever()
-{
-    COORD zerozero = { 0, 0 };
-
-    // step 1. read back current screen
-    CONSOLE_SCREEN_BUFFER_INFOEX screeninfo;
-    screeninfo.cbSize = sizeof(screeninfo);
-    if (!GetConsoleScreenBufferInfoEx(hStdOut, &screeninfo))
-    {
-        cerr << "FAILED to read console info: " << GetLastError() << endl;
-        return 1;
-    }
-    size_t bufsize = screeninfo.dwSize.X * screeninfo.dwSize.Y;
-    CHAR_INFO *pscreenbuf = new CHAR_INFO[bufsize];
-    SMALL_RECT readregion = screeninfo.srWindow;
-    if (!ReadConsoleOutput(hStdOut, pscreenbuf, screeninfo.dwSize, zerozero, &readregion))
-    {
-        cerr << "FAILED to read from console: " << GetLastError() << endl;
-        return 1;
-    }
-
-    // step 2: make a big ol' list of all the coords that are free
-    vector<COORD> free;
-    int wndwidth = screeninfo.srWindow.Right - screeninfo.srWindow.Left;
-    int wndheight = screeninfo.srWindow.Bottom - screeninfo.srWindow.Top;
-    size_t i = 0;
-    COORD pos = { 0,0 };
-    for (; pos.Y < wndheight; ++pos.Y)
-    {
-        for (pos.X = 0; pos.X < wndwidth; ++pos.X, ++i)
+        for (int x = left; x < left + w; ++x, ++pcurr)
         {
-            if (pscreenbuf[i].Char.UnicodeChar == L' ')
+            auto curr = *pcurr;
+            if (curr == 0 || curr == claim)
             {
-                free.push_back(pos);
+                *pcurr = claim;
             }
-        }
-    }
-
-    list<Sparkle> sparkles;
-    uint32_t frame = 0;
-    for (;; ++frame)
-    {
-        // add a new sparkle
-        size_t ipos = rand() % free.size();
-        Sparkle newsparkle(free[ipos]);
-        sparkles.push_back(newsparkle);
-
-        // tick all the sparkles
-        for (auto it = sparkles.begin(); it != sparkles.end(); ++it)
-        {
-            if (!it->tick())
+            else if (curr > 0)
             {
-                it = sparkles.erase(it);
+                newoverlap++;
+                *pcurr = -1;
+                overlap = true;
             }
+            else
+                overlap = true;
         }
 
-        if (_kbhit())
+        pcurr += d3_clothsz - w;
+    }
+
+    if (!overlap && clean)
+        *clean = true;
+
+    return newoverlap;
+}
+
+int32_t day3(const stringlist& input)
+{
+    int16_t* pclothbuf = new int16_t[d3_clothsz * d3_clothsz];
+    memset(pclothbuf, 0, d3_clothsz * d3_clothsz);
+
+    int32_t overlap = 0;
+    for (auto line : input)
+    {
+        // #1 @ 1,3: 4x4
+        istringstream is(line);
+        char hash, at, comma, colon, by;
+        int claim, left, top, width, height;
+        is >> hash >> claim >> ws >> at >> ws >> left >> comma >> top >> colon >> ws >> width >> by >> height;
+        overlap += d3_mark(pclothbuf, claim, left, top, width, height, NULL);
+    }
+
+    delete[] pclothbuf;
+    return overlap;
+}
+
+int32_t day3_2(const stringlist& input)
+{
+    int16_t* pclothbuf = new int16_t[d3_clothsz * d3_clothsz];
+    memset(pclothbuf, 0, d3_clothsz * d3_clothsz);
+
+    // fill
+    for (auto line : input)
+    {
+        // #1 @ 1,3: 4x4
+        istringstream is(line);
+        char hash, at, comma, colon, by;
+        int claim, left, top, width, height;
+        is >> hash >> claim >> ws >> at >> ws >> left >> comma >> top >> colon >> ws >> width >> by >> height;
+        d3_mark(pclothbuf, claim, left, top, width, height, NULL);
+    }
+    // find clean
+    int cleanclaim = -1;
+    for (auto line : input)
+    {
+        // #1 @ 1,3: 4x4
+        istringstream is(line);
+        char hash, at, comma, colon, by;
+        int claim, left, top, width, height;
+        is >> hash >> claim >> ws >> at >> ws >> left >> comma >> top >> colon >> ws >> width >> by >> height;
+        bool clean = false;
+        d3_mark(pclothbuf, claim, left, top, width, height, &clean);
+
+        if (clean)
+        {
+            cleanclaim = claim;
             break;
-
-        Sleep(150);
+        }
     }
 
-    return 0;
+    delete[] pclothbuf;
+    return cleanclaim;
 }
 
 // -------------------------------------------------------------------
@@ -233,6 +237,7 @@ int twinkleforever()
 int main()
 {
     initcolours();
+    srand((unsigned int)time(0));
 
     cout << GARLAND(2) << "  advent of code 2018  " << GARLAND(2) << endl;
 
@@ -253,6 +258,12 @@ int main()
 
     test<string>("fgij", day2_2(stringlist::fromstring("abcde\nfghij\nklmno\npqrst\nfguij\naxcye\nwvxyz")));
     gogogo(day2_2(stringlist::fromfile("day2.txt")));
+
+    test(4, day3(stringlist::fromstring("#1 @ 1,3: 4x4\n#2 @ 3, 1: 4x4\n#3 @ 5, 5: 2x2")));
+    gogogo(day3(stringlist::fromfile("day3.txt")));
+
+    test(3, day3_2(stringlist::fromstring("#1 @ 1,3: 4x4\n#2 @ 3, 1: 4x4\n#3 @ 5, 5: 2x2")));
+    gogogo(day3_2(stringlist::fromfile("day3.txt")));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

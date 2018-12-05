@@ -399,26 +399,35 @@ int day4_2(stringlist& input)
 
 // -------------------------------------------------------------------
 
-int day5(const string& s)
+int day5(string& s)
 {
-    vector<char> units(s.begin(), s.end());
+    // backwards for less copying
 
-    // backwards for less copying i think?
+    // iterator overhead is crippling in debug builds; let's try it without!
+    // RESULT: ~2x speedup. remaining time mostly in string.erase
+    //   THINKS: maybe do something clever with batching contiguous reactions? doesn't look like it'll be much faster tho...
+    char* prbegin = &s.back();
+    char* prend = (&s.front() - 1);
+
+    auto itbegin = s.begin();
+
     char danger = 0;
-    for (auto it = units.rbegin(); it != units.rend(); ++it)
+    for (auto it = prbegin; it != prend; --it)
     {
         if (*it == danger)
         {
             // move back to previous
-            --it;
-            // erase it and it's next (this is all bacwards, so we actually moved fwd 1 then erase from 2 back)
-            it = decltype(it){ units.erase(it.base() - 2, it.base()) };
+            ++it;
+            // erase it and it's next (this is all bakcwards, so we actually moved fwd 1 then erase from 2 back)
+            auto itc = itbegin + (it - prend);
+            s.erase(itc - 2, itc);
+            prbegin -= 2;
 
             // move back another if we can, so we collapse any outer pair
-            if( it != units.rbegin() )
+            if( it != prbegin )
                 --it;
 
-            if (units.empty())
+            if (prbegin == prend)
                 break;
         }
 
@@ -426,7 +435,7 @@ int day5(const string& s)
         danger ^= 0x20; // flip case yeah
     }
 
-    return (int)units.size();
+    return (int)(prbegin - prend);
 }
 
 int day5_2(const string& input)
@@ -435,8 +444,9 @@ int day5_2(const string& input)
     for (char testc = 'a'; testc <= 'z'; ++testc)
     {
         string tests(input);
-        tests.erase(remove(tests.begin(), tests.end(), testc), tests.end());
-        tests.erase(remove(tests.begin(), tests.end(), testc ^ 0x20), tests.end());
+        tests.erase(remove_if(tests.begin(), tests.end(),
+            [testc](char c) { return testc == (c | 0x20); }),
+            tests.end());
 
         int collapsed = day5(tests);
         if (collapsed < min)
@@ -454,7 +464,7 @@ int main()
     srand((unsigned int)time(0));
 
     cout << GARLAND(2) << "  advent of code 2018  " << GARLAND(2) << endl;
-
+    
     test(3, day1(READ("+1\n-2\n+3\n+1")));
     test(3, day1(READ("+1\n+1\n+1")));
     test(0, day1(READ("+1\n+1\n-2")));
@@ -484,15 +494,15 @@ int main()
 
     test(4455, day4_2(LOAD(4t)));
     gogogo(day4_2(LOAD(4)));
-
-    test(0, day5("aA"));
-    test(0, day5("abBA"));
-    test(4, day5("abAB"));
-    test(6, day5("aabAAB"));
-    test(10, day5("dabAcCaCBAcCcaDA"));
+    
+    test(0, day5(string("aA")));
+    test(0, day5(string("abBA")));
+    test(4, day5(string("abAB")));
+    test(6, day5(string("aabAAB")));
+    test(10, day5(string("dabAcCaCBAcCcaDA")));
     gogogo(day5(LOADSTR(5)));
 
-    test(4, day5_2("dabAcCaCBAcCcaDA"));
+    test(4, day5_2(string("dabAcCaCBAcCcaDA")));
     nononoD(day5_2(LOADSTR(5)));
 
     // animate snow falling behind the characters in the console until someone presses a key

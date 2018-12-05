@@ -102,6 +102,24 @@ public:
     }
 };
 
+inline string stringfromfile(const string& fname)
+{
+    string str;
+
+    ifstream ifs("data/" + fname);
+    ifs.seekg(0, ios::end);
+    auto size = ifs.tellg();
+    if (size < 0)
+        throw "couldn't discover file size o_O";
+
+    str.reserve((size_t)size);
+    ifs.seekg(0, ios::beg);
+
+    str.assign((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+
+    return str;
+}
+
 
 
 // ----- day harness -----

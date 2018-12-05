@@ -5,11 +5,13 @@
 #include <map>
 #include <numeric>
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 
-#define READ(str)   stringlist::fromstring(str)
-#define LOAD(day)   stringlist::fromfile("day" #day ".txt")
+#define READ(str)       stringlist::fromstring(str)
+#define LOAD(day)       stringlist::fromfile("day" #day ".txt")
+#define LOADSTR(day)    stringfromfile("day" #day ".txt")
 
 
 // -------------------------------------------------------------------
@@ -27,30 +29,25 @@ int day1(const stringlist& lines)
 
 int day1_2(const stringlist& lines)
 {
-    set<int> seen;
+    const int max_accum = 1000000;
+    vector<uint8_t> seen(2 * max_accum, 0);
 
     int acc = 0;
-    seen.insert(acc);
+    seen[max_accum] = 1;
 
-    bool seentwice = false;
-    while (!seentwice)
+    for(;;)
     {
         for (auto line : lines)
         {
             int iline = stoi(line);
             acc += iline;
+            _ASSERT(acc < max_accum);
+            _ASSERT(-acc < max_accum);
 
-            if (!seentwice)
-            {
-                auto found = seen.find(acc);
-                if (found != seen.end())
-                {
-                    seentwice = true;
-                    return acc;
-                }
-                
-                seen.insert(acc);
-            }
+            if (seen[acc + max_accum])
+                return acc;
+
+            seen[acc + max_accum] = 1;
         }
     }
     return -11111111;
@@ -402,6 +399,55 @@ int day4_2(stringlist& input)
 
 // -------------------------------------------------------------------
 
+int day5(const string& s)
+{
+    vector<char> units(s.begin(), s.end());
+
+    // backwards for less copying i think?
+    char danger = 0;
+    for (auto it = units.rbegin(); it != units.rend(); ++it)
+    {
+        if (*it == danger)
+        {
+            // move back to previous
+            --it;
+            // erase it and it's next (this is all bacwards, so we actually moved fwd 1 then erase from 2 back)
+            it = decltype(it){ units.erase(it.base() - 2, it.base()) };
+
+            // move back another if we can, so we collapse any outer pair
+            if( it != units.rbegin() )
+                --it;
+
+            if (units.empty())
+                break;
+        }
+
+        danger = *it;
+        danger ^= 0x20; // flip case yeah
+    }
+
+    return (int)units.size();
+}
+
+int day5_2(const string& input)
+{
+    int min = 0x7fffff;
+    for (char testc = 'a'; testc <= 'z'; ++testc)
+    {
+        string tests(input);
+        tests.erase(remove(tests.begin(), tests.end(), testc), tests.end());
+        tests.erase(remove(tests.begin(), tests.end(), testc ^ 0x20), tests.end());
+
+        int collapsed = day5(tests);
+        if (collapsed < min)
+            min = collapsed;
+    }
+    
+    return min;
+}
+
+// -------------------------------------------------------------------
+
 int main()
 {
     initcolours();
@@ -419,7 +465,7 @@ int main()
     test(10, day1_2(READ("+3\n+3\n+4\n-2\n-4")));
     test(5, day1_2(READ("-6\n+3\n+8\n+5\n-6")));
     test(14, day1_2(READ("+7\n+7\n-2\n-7\n-4")));
-    nononoD(day1_2(LOAD(1)));
+    gogogo(day1_2(LOAD(1)));
 
     test(12, day2(READ("abcdef\nbababc\nabbcde\nabcccd\naabcdd\nabcdee\nababab")));
     gogogo(day2(LOAD(2)));
@@ -438,6 +484,16 @@ int main()
 
     test(4455, day4_2(LOAD(4t)));
     gogogo(day4_2(LOAD(4)));
+
+    test(0, day5("aA"));
+    test(0, day5("abBA"));
+    test(4, day5("abAB"));
+    test(6, day5("aabAAB"));
+    test(10, day5("dabAcCaCBAcCcaDA"));
+    gogogo(day5(LOADSTR(5)));
+
+    test(4, day5_2("dabAcCaCBAcCcaDA"));
+    nononoD(day5_2(LOADSTR(5)));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

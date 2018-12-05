@@ -37,7 +37,7 @@ int gtest = 1;
 
 void skip()
 {
-    cout << "day" << gday << ",p" << gpart << YELLOW << " skipped " << RESET << " as it's really slow" << endl;
+    cout << "day" << gday << ",p" << gpart << YELLOW << " skipped " << GREY << " (it's really slow)" << RESET << endl;
 
     if (gpart == 2)
     {

@@ -154,6 +154,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\festiveaf.png" />
+    <Image Include="..\sparkle.gif" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="harness.h" />

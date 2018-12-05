@@ -113,10 +113,10 @@ int twinkleforever()
     int wndheight = screeninfo.srWindow.Bottom - screeninfo.srWindow.Top;
     size_t i = 0;
     COORD pos = { screeninfo.srWindow.Left,screeninfo.srWindow.Top };
-    for (; pos.Y < wndheight; ++pos.Y)
+    for (; pos.Y < screeninfo.srWindow.Bottom; ++pos.Y)
     {
         i = (pos.Y- screeninfo.srWindow.Top) * screeninfo.dwSize.X;
-        for (pos.X = screeninfo.srWindow.Left; pos.X < wndwidth; ++pos.X, ++i)
+        for (pos.X = screeninfo.srWindow.Left; pos.X < screeninfo.srWindow.Right; ++pos.X, ++i)
         {
             if (pscreenbuf[i].Char.UnicodeChar == L' ')
             {

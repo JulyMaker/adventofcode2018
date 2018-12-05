@@ -39,6 +39,9 @@
     <Image Include="..\festiveaf.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="..\sparkle.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="harness.h">

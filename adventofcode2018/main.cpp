@@ -1,8 +1,15 @@
 ﻿#include "harness.h"
 
+#include <algorithm>
 #include <ctime>
+#include <map>
+#include <numeric>
 #include <set>
 #include <vector>
+
+
+#define READ(str)   stringlist::fromstring(str)
+#define LOAD(day)   stringlist::fromfile("day" #day ".txt")
 
 
 // -------------------------------------------------------------------
@@ -234,6 +241,167 @@ int32_t day3_2(const stringlist& input)
 
 // -------------------------------------------------------------------
 
+struct D4Day
+{
+    int8_t month;
+    int8_t day;
+    int16_t guard;
+    uint8_t minute[60]; // 1=asleep,0=awake
+
+    D4Day() {/**/}
+    D4Day(int m, int d, int g) : month((int8_t)m), day((int8_t)d), guard((int16_t)g)
+    {
+        memset(minute, 0, sizeof(minute));
+    }
+};
+
+int d4_find_sleepiest_guard(const vector<D4Day>& days)
+{
+    // build map of guard -> sleepiness
+    map<int, int> guard_sleep;
+    for (auto day : days)
+    {
+        auto itgs = guard_sleep.find(day.guard);
+        if (itgs == guard_sleep.end())
+            itgs = guard_sleep.insert(make_pair(day.guard, 0)).first;
+
+        itgs->second += accumulate(day.minute, day.minute + 60, 0);
+    }
+
+    // find the guard who's asleep the most
+    int guard = -1;
+    int maxsleep = -1;
+    for (auto kv : guard_sleep)
+    {
+        if (kv.second > maxsleep)
+        {
+            guard = kv.first;
+            maxsleep = kv.second;
+        }
+    }
+
+    return guard;
+}
+
+int d4_find_sleepiest_minute(const vector<D4Day>& days, int guard)
+{
+    uint8_t minutes[60];
+    memset(minutes, 0, sizeof(minutes));
+
+    for (auto day : days)
+    {
+        if (day.guard != guard)
+            continue;
+
+        for (int i = 0; i < 60; ++i)
+        {
+            minutes[i] += day.minute[i];
+        }
+    }
+
+    auto itsleepy = max_element(minutes, minutes + 60);
+
+    return (int)distance(minutes, itsleepy);
+}
+
+
+void d4_load(stringlist& input, vector<D4Day>& outdays)
+{
+    // input not date sorted
+    input.sort();
+
+    D4Day* pday = NULL;
+    int sleepmin = -1;
+
+    for (auto line : input)
+    {
+        // [1518-11-01 00:00] Guard #10 begins shift
+        // [1518-11-01 00:05] falls asleep
+        // [1518-11-01 00:25] wakes up
+        istringstream is(line);
+        int month, day, hour, minute;
+        char dummy;
+        is.ignore(6);
+        is >> month >> dummy >> day >> ws >> hour >> dummy >> minute >> dummy >> ws;
+        string event(std::istreambuf_iterator<char>(is), {});   // read the rest of the buffer into a string. could also just use substr...
+
+        if (event[0] == 'G')
+        {
+            _ASSERT(sleepmin < 0);
+            istringstream isev(event);
+            isev.ignore(7);
+            int guard;
+            isev >> guard;
+            outdays.push_back(D4Day(month, day, guard));
+            pday = &outdays.back();
+        }
+        else if (event[0] == 'f')
+        {
+            _ASSERT(sleepmin < 0);
+            sleepmin = minute;
+        }
+        else
+        {
+            _ASSERT(event[0] == 'w');
+            _ASSERT(sleepmin >= 0);
+            _ASSERT(sleepmin < 60);
+            _ASSERT(minute <= 60);
+            _ASSERT(minute > 0);
+            fill(pday->minute + sleepmin, pday->minute + minute, 1);
+            sleepmin = -1;
+        }
+    }
+}
+
+int day4(stringlist& input)
+{
+    vector<D4Day> days;
+    d4_load(input, days);
+
+    int sleepy = d4_find_sleepiest_guard(days);
+    int sleepiest_minute = d4_find_sleepiest_minute(days, sleepy);
+
+    return sleepy * sleepiest_minute;
+}
+
+int day4_2(stringlist& input)
+{
+    vector<D4Day> days;
+    d4_load(input, days);
+
+    map<int, vector<uint8_t> > guard_minutes;
+    for (auto day : days)
+    {
+        auto itgm = guard_minutes.find(day.guard);
+        if (itgm == guard_minutes.end())
+        {
+            itgm = guard_minutes.emplace(make_pair(day.guard, vector<uint8_t>(60,0))).first;
+        }
+
+        for (int i = 0; i < 60; ++i)
+            itgm->second[i] += day.minute[i];
+    }
+
+    int guard = -1;
+    int minute = -1;
+    int sleepiness = -1;
+    for (auto g_mins : guard_minutes)
+    {
+        // find the sleepiest minute
+        auto itsleepy = max_element(g_mins.second.begin(), g_mins.second.end());
+        if (*itsleepy > sleepiness)
+        {
+            guard = g_mins.first;
+            sleepiness = *itsleepy;
+            minute = distance(g_mins.second.begin(), itsleepy);
+        }
+    }
+
+    return guard * minute;
+}
+
+// -------------------------------------------------------------------
+
 int main()
 {
     initcolours();
@@ -241,29 +409,35 @@ int main()
 
     cout << GARLAND(2) << "  advent of code 2018  " << GARLAND(2) << endl;
 
-    test(3, day1(stringlist::fromstring("+1\n-2\n+3\n+1")));
-    test(3, day1(stringlist::fromstring("+1\n+1\n+1")));
-    test(0, day1(stringlist::fromstring("+1\n+1\n-2")));
-    test(-6, day1(stringlist::fromstring("-1\n-2\n-3")));
-    gogogo(day1(stringlist::fromfile("day1.txt")));
+    test(3, day1(READ("+1\n-2\n+3\n+1")));
+    test(3, day1(READ("+1\n+1\n+1")));
+    test(0, day1(READ("+1\n+1\n-2")));
+    test(-6, day1(READ("-1\n-2\n-3")));
+    gogogo(day1(LOAD(1)));
 
-    test(0, day1_2(stringlist::fromstring("+1\n-1")));
-    test(10, day1_2(stringlist::fromstring("+3\n+3\n+4\n-2\n-4")));
-    test(5, day1_2(stringlist::fromstring("-6\n+3\n+8\n+5\n-6")));
-    test(14, day1_2(stringlist::fromstring("+7\n+7\n-2\n-7\n-4")));
-    nononoD(day1_2(stringlist::fromfile("day1.txt")));
+    test(0, day1_2(READ("+1\n-1")));
+    test(10, day1_2(READ("+3\n+3\n+4\n-2\n-4")));
+    test(5, day1_2(READ("-6\n+3\n+8\n+5\n-6")));
+    test(14, day1_2(READ("+7\n+7\n-2\n-7\n-4")));
+    nononoD(day1_2(LOAD(1)));
 
-    test(12, day2(stringlist::fromstring("abcdef\nbababc\nabbcde\nabcccd\naabcdd\nabcdee\nababab")));
-    gogogo(day2(stringlist::fromfile("day2.txt")));
+    test(12, day2(READ("abcdef\nbababc\nabbcde\nabcccd\naabcdd\nabcdee\nababab")));
+    gogogo(day2(LOAD(2)));
 
-    test<string>("fgij", day2_2(stringlist::fromstring("abcde\nfghij\nklmno\npqrst\nfguij\naxcye\nwvxyz")));
-    gogogo(day2_2(stringlist::fromfile("day2.txt")));
+    test<string>("fgij", day2_2(READ("abcde\nfghij\nklmno\npqrst\nfguij\naxcye\nwvxyz")));
+    gogogo(day2_2(LOAD(2)));
 
-    test(4, day3(stringlist::fromstring("#1 @ 1,3: 4x4\n#2 @ 3, 1: 4x4\n#3 @ 5, 5: 2x2")));
-    gogogo(day3(stringlist::fromfile("day3.txt")));
+    test(4, day3(READ("#1 @ 1,3: 4x4\n#2 @ 3, 1: 4x4\n#3 @ 5, 5: 2x2")));
+    gogogo(day3(LOAD(3)));
 
-    test(3, day3_2(stringlist::fromstring("#1 @ 1,3: 4x4\n#2 @ 3, 1: 4x4\n#3 @ 5, 5: 2x2")));
-    gogogo(day3_2(stringlist::fromfile("day3.txt")));
+    test(3, day3_2(READ("#1 @ 1,3: 4x4\n#2 @ 3, 1: 4x4\n#3 @ 5, 5: 2x2")));
+    gogogo(day3_2(LOAD(3)));
+
+    test(240, day4(LOAD(4t)));
+    gogogo(day4(LOAD(4)));
+
+    test(4455, day4_2(LOAD(4t)));
+    gogogo(day4_2(LOAD(4)));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

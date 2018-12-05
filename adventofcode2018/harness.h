@@ -121,7 +121,7 @@ bool test(TResult shouldbe, TResult result)
     }
     else
     {
-        cout << RED << "FAIL" << RESET << ": should be " << shouldbe << ", result was " << result;
+        cout << RED << "FAIL" << RESET << ": should be " << shouldbe << ", result was " << result << "\n";
     }
 
     cout << endl;

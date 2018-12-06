@@ -367,7 +367,7 @@ int day4_2(stringlist& input)
     d4_load(input, days);
 
     map<int, vector<uint8_t> > guard_minutes;
-    for (auto day : days)
+    for (auto& day : days)
     {
         auto itgm = guard_minutes.find(day.guard);
         if (itgm == guard_minutes.end())
@@ -458,6 +458,148 @@ int day5_2(const string& input)
 
 // -------------------------------------------------------------------
 
+struct D6Point
+{
+    int x, y;
+    int area;
+    int id;
+    bool infinite;
+
+
+    D6Point() { /**/ }
+    D6Point(const string& line, int _id) : area(0), id(_id), infinite(false)
+    {
+        char comma;
+        istringstream is(line);
+        is >> x >> comma >> ws >> y;
+    }
+
+    int distfrom(int ox, int oy) const
+    {
+        return abs(ox - x) + abs(oy - y);
+    }
+};
+
+int day6(const stringlist& input)
+{
+    // load input
+    vector<D6Point> points;
+    points.reserve(input.size());
+    int id = 1;
+    for (auto& line : input)
+    {
+        points.emplace_back(line, id);
+        id++;
+    }
+
+    // scan points to find extents
+    int minx = 1000000, miny = 1000000;
+    int maxx = -1, maxy = -1;
+    for (auto& point : points)
+    {
+        minx = min(minx, point.x);
+        miny = min(miny, point.y);
+        maxx = max(maxx, point.x);
+        maxy = max(maxy, point.y);
+    }
+
+    // spin over the space and classify each point
+    for (int y = miny; y <= maxy; ++y)
+    {
+        bool infinitey = (y == miny) || (y == maxy);
+
+        for (int x = minx; x <= maxx; ++x)
+        {
+            D6Point* nearest = NULL;
+            int mindist = 1000000000;
+
+            for (auto& point : points)
+            {
+                int dist = point.distfrom(x, y);
+                if (dist < mindist)
+                {
+                    mindist = dist;
+                    nearest = &point;
+                }
+                else if (dist == mindist)
+                {
+                    nearest = NULL;
+                }
+            }
+
+            if (nearest)
+            {
+                bool infinite = infinitey || (x == minx) || (x == maxx);
+
+                nearest->infinite |= infinite;
+                nearest->area++;
+            }
+        }
+    }
+
+    // now find the biggest non-infinite area
+    const D6Point* nearest = NULL;
+    int biggestarea = -1;
+    for (auto point : points)
+    {
+        if (!point.infinite && point.area > biggestarea)
+        {
+            nearest = &point;
+            biggestarea = point.area;
+        }
+    }
+
+    return biggestarea;
+}
+
+int day6_2(const stringlist& input, int safedist)
+{
+    // load input
+    vector<D6Point> points;
+    points.reserve(input.size());
+    int id = 1;
+    for (auto& line : input)
+    {
+        points.emplace_back(line, id);
+        id++;
+    }
+
+    // scan points to find extents
+    int minx = 1000000, miny = 1000000;
+    int maxx = -1, maxy = -1;
+    for (auto& point : points)
+    {
+        minx = min(minx, point.x);
+        miny = min(miny, point.y);
+        maxx = max(maxx, point.x);
+        maxy = max(maxy, point.y);
+    }
+
+    // whip over the whole space, then over all the points to measure safety
+    // we going O(n^3) here o_O
+    int safepoints = 0;
+    for (int x = minx; x <= maxx; ++x)
+    {
+        for (int y = miny; y <= maxy; ++y)
+        {
+            int totaldist = 0;
+            for (auto& point : points)
+            {
+                totaldist += point.distfrom(x, y);
+                if (totaldist > safedist)
+                    break;
+            }
+            if (totaldist < safedist) {
+                safepoints++;
+            }
+        }
+    }
+
+    return safepoints;
+}
+
+// -------------------------------------------------------------------
+
 int main()
 {
     initcolours();
@@ -504,6 +646,12 @@ int main()
 
     test(4, day5_2(string("dabAcCaCBAcCcaDA")));
     nononoD(day5_2(LOADSTR(5)));
+
+    test(17, day6(READ("1, 1\n1, 6\n8, 3\n3, 4\n5, 5\n8, 9")));
+    gogogo(day6(LOAD(6)));
+
+    test(16, day6_2(READ("1, 1\n1, 6\n8, 3\n3, 4\n5, 5\n8, 9"), 32));
+    gogogo(day6_2(LOAD(6), 10000));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

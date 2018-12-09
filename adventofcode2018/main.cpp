@@ -817,6 +817,86 @@ int day7_2(const stringlist& input, int numsteps, int numworkers, int extratime)
 
 // -------------------------------------------------------------------
 
+int d8_summetadata(istream& is)
+{
+    int numchildren, nummeta;
+    is >> numchildren >> ws >> nummeta >> ws;
+
+    int metatotal = 0;
+    for (int c = 0; c < numchildren; ++c)
+    {
+        metatotal += d8_summetadata(is);
+    }
+
+    for (int m = 0; m < nummeta; ++m)
+    {
+        int meta;
+        is >> meta >> ws;
+        metatotal += meta;
+    }
+
+    return metatotal;
+}
+
+int day8(const string& input)
+{
+    istringstream is(input);
+    return d8_summetadata(is);
+}
+
+struct D8Node
+{
+    vector<D8Node> children;
+    vector<int> meta;
+    int value;
+
+    D8Node() {/**/}
+    D8Node(istream& is)
+    {
+        int numchildren, nummeta;
+        is >> numchildren >> ws >> nummeta >> ws;
+
+        children.reserve(numchildren);
+        for (int i = 0; i < numchildren; ++i)
+        {
+            children.emplace_back(is);
+        }
+
+        meta.reserve(nummeta);
+        for (int i = 0; i < nummeta; ++i)
+        {
+            int m;
+            is >> m >> ws;
+            meta.push_back(m);
+        }
+
+        value = 0;
+        if (numchildren)
+        {
+            for (auto m : meta)
+            {
+                if (m <= numchildren)
+                {
+                    value += children[m-1].value;
+                }
+            }
+        }
+        else
+        {
+            value = accumulate(meta.begin(), meta.end(), 0);
+        }
+    }
+};
+
+int day8_2(const string& input)
+{
+    istringstream is(input);
+    D8Node root(is);
+    return root.value;
+}
+
+// -------------------------------------------------------------------
+
 int main()
 {
     initcolours();
@@ -875,6 +955,12 @@ int main()
 
     test(15, day7_2(LOAD(7t), 6, 2, 0));
     gogogo(day7_2(LOAD(7), 26, 5, 60));
+
+    test(138, day8(string("2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2")));
+    gogogo(day8(LOADSTR(8)));
+
+    test(66, day8_2(string("2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2")));
+    gogogo(day8_2(LOADSTR(8)));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

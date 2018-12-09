@@ -35,7 +35,7 @@ int day1_2(const stringlist& lines)
     int acc = 0;
     seen[max_accum] = 1;
 
-    for(;;)
+    for (;;)
     {
         for (auto line : lines)
         {
@@ -245,7 +245,7 @@ struct D4Day
     int16_t guard;
     uint8_t minute[60]; // 1=asleep,0=awake
 
-    D4Day() {/**/}
+    D4Day() {/**/ }
     D4Day(int m, int d, int g) : month((int8_t)m), day((int8_t)d), guard((int16_t)g)
     {
         memset(minute, 0, sizeof(minute));
@@ -372,7 +372,7 @@ int day4_2(stringlist& input)
         auto itgm = guard_minutes.find(day.guard);
         if (itgm == guard_minutes.end())
         {
-            itgm = guard_minutes.emplace(make_pair(day.guard, vector<uint8_t>(60,0))).first;
+            itgm = guard_minutes.emplace(make_pair(day.guard, vector<uint8_t>(60, 0))).first;
         }
 
         for (int i = 0; i < 60; ++i)
@@ -399,7 +399,53 @@ int day4_2(stringlist& input)
 
 // -------------------------------------------------------------------
 
-int day5(string& s)
+// v2, foregoing stl containers so we can include it in a debug run!
+int day5(const string& s)
+{
+    auto itread = s.begin();
+
+    char* sout = new char[s.length() + 1];
+    memset(sout, 0, s.length() + 1);
+    auto itbackch = sout;
+
+    auto itend = s.end();
+    while (itread != itend)
+    {
+        if (sout[0] != 0)
+        {
+            char nextch = *itread;
+            char annihilate = *itbackch ^ 0x20;
+            if (nextch != annihilate)
+            {
+                ++itbackch;
+                *itbackch = nextch;
+                ++itread;
+            }
+            else
+            {
+                *itbackch = '\0';       // not technically necessary, but nice for debugging
+                if (itbackch != sout)
+                    --itbackch;
+
+                ++itread;
+            }
+        }
+        else
+        {
+            // copy first char over
+            *itbackch = *itread;
+            ++itread;
+        }
+    }
+
+    int length = (*sout) ? itbackch - sout + 1 : 0;
+
+    delete[] sout;
+    return length;
+}
+
+// v1 - quite fast, but not fast enough in debug config
+int day5_o(string& s)
 {
     // backwards for less copying
 
@@ -424,7 +470,7 @@ int day5(string& s)
             prbegin -= 2;
 
             // move back another if we can, so we collapse any outer pair
-            if( it != prbegin )
+            if (it != prbegin)
                 --it;
 
             if (prbegin == prend)
@@ -452,7 +498,7 @@ int day5_2(const string& input)
         if (collapsed < min)
             min = collapsed;
     }
-    
+
     return min;
 }
 
@@ -600,13 +646,184 @@ int day6_2(const stringlist& input, int safedist)
 
 // -------------------------------------------------------------------
 
+struct D7Step
+{
+    bool ready;
+    char name;
+    int8_t totaltime;
+    int8_t timeleft;
+    vector<char> dependson;
+
+    D7Step() {/**/ }
+    D7Step(char _name, int8_t extratime) : ready(true), name(_name)
+    {
+        totaltime = 1 + (_name - 'A') + extratime;
+        timeleft = totaltime;
+    }
+
+    void adddep(char dep)
+    {
+        dependson.push_back(dep);
+        ready = false;
+    }
+};
+
+void d7_loadsteps(const stringlist& input, int numsteps, vector<D7Step>& outsteps, int extratime = 0)
+{
+    outsteps.reserve(numsteps);
+    for (int step = 0; step < numsteps; ++step)
+    {
+        outsteps.emplace_back(step + 'A', extratime);
+    }
+
+    // load the instructions
+    for (auto& line : input)
+    {
+        // "Step A must be finished before step D can begin."
+        char step;
+        char dependson;
+        istringstream is(line);
+        is.ignore(10000, ' ');
+        is >> dependson;
+        is.seekg(30, ios_base::cur);
+        is >> step;
+
+        outsteps[step - 'A'].adddep(dependson);
+    }
+}
+
+
+void d7_updateopen(vector<D7Step>& steps, const vector<bool>& completed, set<char>& open)
+{
+    // update our steps, adding any newly ready steps to our open set
+    for (auto& step : steps)
+    {
+        if (step.ready)
+            continue;
+
+        bool readynow = true;
+        for (char dep : step.dependson)
+        {
+            if (!completed[dep - 'A'])
+            {
+                readynow = false;
+                break;
+            }
+        }
+
+        if (readynow)
+        {
+            open.insert(step.name);
+            step.ready = true;
+        }
+    }
+}
+
+
+string day7(const stringlist& input, int numsteps)
+{
+    vector<D7Step> steps;
+    d7_loadsteps(input, numsteps, steps);
+
+    // build the initial list of open steps
+    set<char> open;
+    for (auto& step : steps)
+    {
+        if (step.ready)
+            open.insert(step.name);
+    }
+
+    vector<bool> completed(numsteps, false);
+
+    // build the sleigh!
+    string order;
+    while (!open.empty())
+    {
+        auto itnext = open.begin();
+        char next = *itnext;
+        open.erase(itnext);
+
+        order.push_back(next);
+        completed[next - 'A'] = true;
+
+        d7_updateopen(steps, completed, open);
+    }
+
+    return order;
+}
+
+
+int day7_2(const stringlist& input, int numsteps, int numworkers, int extratime)
+{
+    vector<D7Step> steps;
+    d7_loadsteps(input, numsteps, steps, extratime);
+
+    // build the initial list of open steps
+    set<char> open;
+    for (auto& step : steps)
+    {
+        if (step.ready)
+            open.insert(step.name);
+    }
+
+    vector<bool> completed(numsteps, false);
+
+    // build the sleigh!
+    string order;
+    int time = 0;
+    vector<D7Step*> workers(numworkers, 0);
+    int numworking = 0;
+    while (!open.empty() || numworking)
+    {
+        // find work
+        for (auto itworker = workers.begin(); itworker != workers.end(); ++itworker)
+        {
+            if (!*itworker && !open.empty())
+            {
+                auto itnext = open.begin();
+                char next = *itnext;
+                open.erase(itnext);
+
+                *itworker = &steps[next - 'A'];
+                ++numworking;
+            }
+        }
+
+        // do work
+        for (auto itworker = workers.begin(); itworker != workers.end(); ++itworker)
+        {
+            // do some work if we have some
+            if (*itworker)
+            {
+                D7Step* active = *itworker;
+                active->timeleft--;
+                if (active->timeleft == 0)
+                {
+                    order.push_back(active->name);
+                    completed[active->name - 'A'] = true;
+                    *itworker = NULL;
+                    --numworking;
+
+                    d7_updateopen(steps, completed, open);
+                }
+            }
+        }
+
+        time++;
+    }
+
+    return time;
+}
+
+// -------------------------------------------------------------------
+
 int main()
 {
     initcolours();
     srand((unsigned int)time(0));
 
     cout << GARLAND(2) << "  advent of code 2018  " << GARLAND(2) << endl;
-    
+
     test(3, day1(READ("+1\n-2\n+3\n+1")));
     test(3, day1(READ("+1\n+1\n+1")));
     test(0, day1(READ("+1\n+1\n-2")));
@@ -636,7 +853,7 @@ int main()
 
     test(4455, day4_2(LOAD(4t)));
     gogogo(day4_2(LOAD(4)));
-    
+
     test(0, day5(string("aA")));
     test(0, day5(string("abBA")));
     test(4, day5(string("abAB")));
@@ -645,13 +862,19 @@ int main()
     gogogo(day5(LOADSTR(5)));
 
     test(4, day5_2(string("dabAcCaCBAcCcaDA")));
-    nononoD(day5_2(LOADSTR(5)));
+    gogogo(day5_2(LOADSTR(5)));
 
     test(17, day6(READ("1, 1\n1, 6\n8, 3\n3, 4\n5, 5\n8, 9")));
     gogogo(day6(LOAD(6)));
 
     test(16, day6_2(READ("1, 1\n1, 6\n8, 3\n3, 4\n5, 5\n8, 9"), 32));
     gogogo(day6_2(LOAD(6), 10000));
+
+    test<string>("CABDFE", day7(LOAD(7t), 6));
+    gogogo(day7(LOAD(7), 26));
+
+    test(15, day7_2(LOAD(7t), 6, 2, 0));
+    gogogo(day7_2(LOAD(7), 26, 5, 60));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

@@ -155,6 +155,8 @@
     <Text Include="data\day4t.txt" />
     <Text Include="data\day5.txt" />
     <Text Include="data\day6.txt" />
+    <Text Include="data\day7.txt" />
+    <Text Include="data\day7t.txt" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\festiveaf.png" />

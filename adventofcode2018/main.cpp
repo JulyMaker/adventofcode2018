@@ -799,12 +799,12 @@ int day7_2(const stringlist& input, int numsteps, int numworkers, int extratime)
                 active->timeleft--;
                 if (active->timeleft == 0)
                 {
-                    order.push_back(active->name);
-                    completed[active->name - 'A'] = true;
-                    *itworker = NULL;
-                    --numworking;
+                order.push_back(active->name);
+                completed[active->name - 'A'] = true;
+                *itworker = NULL;
+                --numworking;
 
-                    d7_updateopen(steps, completed, open);
+                d7_updateopen(steps, completed, open);
                 }
             }
         }
@@ -850,7 +850,7 @@ struct D8Node
     vector<int> meta;
     int value;
 
-    D8Node() {/**/}
+    D8Node() {/**/ }
     D8Node(istream& is)
     {
         int numchildren, nummeta;
@@ -877,7 +877,7 @@ struct D8Node
             {
                 if (m <= numchildren)
                 {
-                    value += children[m-1].value;
+                    value += children[m - 1].value;
                 }
             }
         }
@@ -893,6 +893,71 @@ int day8_2(const string& input)
     istringstream is(input);
     D8Node root(is);
     return root.value;
+}
+
+// -------------------------------------------------------------------
+
+void ringadvance(list<int>::iterator& it, list<int>& l, int dist)
+{
+    while (dist)
+    {
+        ++it;
+        if (it == l.end())
+            it = l.begin();
+
+        --dist;
+    }
+}
+
+void ringretreat(list<int>::iterator& it, list<int>& l, int dist)
+{
+    while (dist)
+    {
+        if (it == l.begin())
+            it = l.end();
+        --it;
+
+        --dist;
+    }
+}
+
+
+int64_t day9(const string& input )
+{
+    // 9 players; last marble is worth 25 points
+    int nplayers, maxmarble;
+    istringstream is(input);
+    is >> nplayers;
+    is.seekg(30, ios_base::cur);
+    is >> maxmarble;
+
+    vector<int64_t> playerscores(nplayers, 0);
+
+    // play the game!
+    list<int> marbles = { 0,1 };
+    auto itcur = next(marbles.begin());
+    int curplayer = 0;
+    for (int marble = 2; marble <= maxmarble; ++marble)
+    {
+        if (marble % 23)
+        {
+            ringadvance(itcur, marbles, 2);
+            itcur = marbles.insert(itcur, marble);
+        }
+        else
+        {
+            ringretreat(itcur, marbles, 7);
+
+            playerscores[curplayer] += marble + *itcur;
+            itcur = marbles.erase(itcur);
+            if (itcur == marbles.end())
+                itcur = marbles.begin();
+        }
+
+        curplayer = (curplayer + 1) % nplayers;
+    }
+
+    return *max_element(playerscores.begin(), playerscores.end());
 }
 
 // -------------------------------------------------------------------
@@ -961,6 +1026,16 @@ int main()
 
     test(66, day8_2(string("2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2")));
     gogogo(day8_2(LOADSTR(8)));
+
+    test(32ll, day9(string("9 players; last marble is worth 25 points")));
+    test(8317ll, day9(string("10 players; last marble is worth 1618 points")));
+    test(146373ll, day9(string("13 players; last marble is worth 7999 points")));
+    test(2764ll, day9(string("17 players; last marble is worth 1104 points")));
+    test(54718ll, day9(string("21 players; last marble is worth 6111 points")));
+    test(37305ll, day9(string("30 players; last marble is worth 5807 points")));
+    gogogo(day9(string("466 players; last marble is worth 71436 points")));
+
+    nononoD(day9(string("466 players; last marble is worth 7143600 points")));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

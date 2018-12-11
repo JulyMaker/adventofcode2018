@@ -49,6 +49,12 @@
     <Text Include="data\day8.txt">
       <Filter>Resource Files</Filter>
     </Text>
+    <Text Include="data\day10t.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="data\day10.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\festiveaf.png">

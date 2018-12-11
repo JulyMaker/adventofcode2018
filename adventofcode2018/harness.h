@@ -156,16 +156,20 @@ void gogogo(TResult result)
     {
         gday++;
         gpart = 1;
+        cout << "\n" << GARLAND(4) << "\n" << endl;
     }
     else
+    {
         gpart++;
+        cout << endl;
+    }
 
     gtest = 1;
-    cout << "\n" << GARLAND(4) << "\n" << endl;
 }
 
 void skip();
 
+#define nest(...)
 #define nonono(expr) skip()
 
 #ifdef _DEBUG

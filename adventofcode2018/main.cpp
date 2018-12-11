@@ -962,13 +962,159 @@ int64_t day9(const string& input )
 
 // -------------------------------------------------------------------
 
+// (see day10 project - ../day10/ -- for day10!)
+
+// -------------------------------------------------------------------
+
+const int d11_ncells = 300 + 1;
+
+struct D11Point
+{
+    int x, y, s;
+    bool operator==(const D11Point& o) const
+    {
+        return x == o.x && y == o.y && s == o.s;
+    }
+};
+ostream& operator<<(ostream& os, const D11Point& pt)
+{
+    os << '(' << pt.x << ',' << pt.y << ',' << pt.s << ')';
+    return os;
+}
+
+int d11_calcpower(int gridnum, int x, int y)
+{
+    int rackid = x + 10;
+    int64_t power = rackid * y;
+    power += gridnum;
+    power *= rackid;
+    power = (power / 100) % 10;
+    power -= 5;
+    return (int)power;
+}
+
+void d11_fillgrid(int gridnum, int8_t* grid)
+{
+    for (int y = 1; y <= 300; ++y)
+    {
+        for (int x = 1; x <= 300; ++x)
+        {
+            grid[x + y*d11_ncells] = d11_calcpower(gridnum, x, y);
+        }
+    }
+}
+
+D11Point d11_findpowerfulest(const int8_t* grid, int size, int* outbestpower=NULL)
+{
+    D11Point bestpoint = { 0,0,size };
+    int bestpower = -100000;
+    for (int y = 1; y <= (300 + 1 - size); ++y)
+    {
+        for (int x = 1; x <= (300 + 1 - size); ++x)
+        {
+            const int8_t* pcells = grid + x + y*d11_ncells;
+            int power = 0;
+            for (int r = 0; r < size; ++r)
+            {
+                const int8_t* prow = pcells;
+
+                int colsleft = size;
+                while (colsleft >= 8)
+                {
+                    int p0 = prow[0] + prow[1];
+                    int p1 = prow[2] + prow[3];
+                    int p2 = prow[4] + prow[5];
+                    int p3 = prow[6] + prow[7];
+                    int pl = p0 + p1;
+                    int pr = p2 + p3;
+                    power += pl + pr;
+
+                    colsleft -= 8;
+                    prow += 8;
+                }
+                switch (colsleft)
+                {
+                case 7: power += prow[6];
+                case 6: power += prow[5];
+                case 5: power += prow[4];
+                case 4: power += prow[3];
+                case 3: power += prow[2];
+                case 2: power += prow[1];
+                case 1: power += prow[0];
+                }
+
+                pcells += d11_ncells;
+            }
+
+            if (power > bestpower)
+            {
+                bestpoint.x = x;
+                bestpoint.y = y;
+                bestpower = power;
+            }
+        }
+    }
+
+    if (outbestpower)
+        *outbestpower = bestpower;
+
+    return bestpoint;
+}
+
+
+D11Point day11(int gridnum)
+{
+    int8_t* grid = new int8_t[d11_ncells * d11_ncells];
+
+    // fill the grid with cell powers
+    d11_fillgrid(gridnum, grid);
+
+    // seek out the biggest 3x3 square
+    D11Point bestpoint = d11_findpowerfulest(grid, 3);
+    
+    delete[] grid;
+    return bestpoint;
+}
+
+D11Point day11_2(int gridnum)
+{
+    int8_t* grid = new int8_t[d11_ncells * d11_ncells];
+
+    // fill the grid with cell powers
+    d11_fillgrid(gridnum, grid);
+
+    // seek out the biggest 3x3 square
+    int bestpower = -1000000;
+    D11Point bestpoint;
+    for (int size = 1; size < 300; ++size)
+    {
+        if ((size % 10) == 1)
+            cout << '.' << flush;
+
+        int power = -1000000;
+        D11Point point = d11_findpowerfulest(grid, size, &power);
+
+        if (power > bestpower)
+        {
+            bestpoint = point;
+            bestpower = power;
+        }
+    }
+    cout << '\r' << flush;
+
+    delete[] grid;
+    return bestpoint;
+}
+
+// -------------------------------------------------------------------
+
 int main()
 {
     initcolours();
     srand((unsigned int)time(0));
 
     cout << GARLAND(2) << "  advent of code 2018  " << GARLAND(2) << endl;
-
+    
     test(3, day1(READ("+1\n-2\n+3\n+1")));
     test(3, day1(READ("+1\n+1\n+1")));
     test(0, day1(READ("+1\n+1\n-2")));
@@ -1036,6 +1182,17 @@ int main()
     gogogo(day9(string("466 players; last marble is worth 71436 points")));
 
     nononoD(day9(string("466 players; last marble is worth 7143600 points")));
+
+    test(-5, d11_calcpower(57, 122, 79));
+    test(0, d11_calcpower(39, 217, 196));
+    test(4, d11_calcpower(71, 101, 153));
+    test(D11Point{ 33,45,3 }, day11(18));
+    test(D11Point{ 21,61,3 }, day11(42));
+    gogogo(day11(4455));
+    
+    nest(D11Point{ 90,269,16 }, day11_2(18));
+    nest(D11Point{ 232,251,12 }, day11_2(42));
+    nonono(day11_2(4455));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

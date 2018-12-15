@@ -1534,7 +1534,86 @@ D13Cart day13_2(const stringlist& input)
     return system.getLastCartStanding();
 }
 
+// -------------------------------------------------------------------
 
+string day14(int input)
+{
+    vector<char> recipes{ '3', '7' };
+    recipes.reserve(1000000);
+
+    uint32_t elves[2] = { 0, 1 };
+
+    while (recipes.size() < (uint32_t)(input + 10))
+    {
+        int r0score = recipes[elves[0]] - '0';
+        int r1score = recipes[elves[1]] - '0';
+        int newscore = r0score + r1score;
+
+        if (newscore >= 10)
+        {
+            recipes.push_back((newscore / 10) + '0');
+            if (recipes.size() == (uint32_t)(input + 10))
+                break;
+
+            recipes.push_back((newscore % 10) + '0');
+        }
+        else
+            recipes.push_back(newscore + '0');
+
+        elves[0] = (elves[0] + 1 + r0score) % recipes.size();
+        elves[1] = (elves[1] + 1 + r1score) % recipes.size();
+    }
+
+    string last10(recipes.end() - 10, recipes.end());
+    return last10;
+}
+
+
+bool d14_addrecipe(int r, vector<char>& recipes, const string& sought, uint32_t soughtlen)
+{
+    _ASSERT(r < 10);
+    recipes.push_back(r + '0');
+
+    if (recipes.size() >= soughtlen)
+    {
+        auto unfound = mismatch(sought.begin(), sought.end(), recipes.end() - soughtlen);
+        if (unfound.first == sought.end())
+            return true;
+    }
+
+    return false;
+}
+
+int day14_2(const char* input)
+{
+    string sought(input);
+    uint32_t soughtlen = sought.size();
+    vector<char> recipes{ '3', '7' };
+    recipes.reserve(1000000);
+
+    uint32_t elves[2] = { 0, 1 };
+
+    for (;; )
+    {
+        int r0score = recipes[elves[0]] - '0';
+        int r1score = recipes[elves[1]] - '0';
+        int newscore = r0score + r1score;
+
+        if (newscore >= 10)
+        {
+            if (d14_addrecipe(newscore / 10, recipes, sought, soughtlen))
+                return recipes.size() - soughtlen;
+        }
+
+        if (d14_addrecipe(newscore % 10, recipes, sought, soughtlen))
+            return recipes.size() - soughtlen;
+
+        elves[0] = (elves[0] + 1 + r0score) % recipes.size();
+        elves[1] = (elves[1] + 1 + r1score) % recipes.size();
+    }
+
+    return 0;
+}
 
 // -------------------------------------------------------------------
 
@@ -1636,6 +1715,18 @@ int main()
 
     test(D13Cart(6, 4), day13_2(LOAD(13t2)));
     gogogo(day13_2(LOAD(13)));
+
+    test<string>("5158916779", day14(9));
+    test<string>("0124515891", day14(5));
+    test<string>("9251071085", day14(18));
+    test<string>("5941429882", day14(2018));
+    gogogo(day14(652601));
+    
+    test(9, day14_2("51589"));
+    test(5, day14_2("01245"));
+    test(18, day14_2("92510"));
+    test(2018, day14_2("59414"));
+    nononoD(day14_2("652601"));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

@@ -167,7 +167,7 @@ void gogogo(TResult result)
     gtest = 1;
 }
 
-void skip();
+void skip(const char* message = "cos it's really slow!");
 
 #define nest(...)
 #define nonono(expr) skip()

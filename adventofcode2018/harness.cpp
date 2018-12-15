@@ -35,20 +35,20 @@ int gpart = 1;
 int gtest = 1;
 
 
-void skip()
+void skip( const char* message )
 {
-    cout << "day" << gday << ",p" << gpart << YELLOW << " skipped " << GREY << " (it's really slow)" << RESET << endl;
+    cout << "day" << gday << ",p" << gpart << YELLOW << " skipped " << GREY << " (" << message << ")" << RESET << endl;
 
     if (gpart == 2)
     {
         gday++;
         gpart = 1;
+        cout << "\n" << GARLAND(4) << "\n" << endl;
     }
     else
         gpart++;
 
     gtest = 1;
-    cout << "\n" << GARLAND(4) << endl;
 }
 
 

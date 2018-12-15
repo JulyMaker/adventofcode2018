@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <ctime>
+#include <iomanip>
 #include <map>
 #include <numeric>
 #include <set>
@@ -1108,6 +1109,435 @@ D11Point day11_2(int gridnum)
 
 // -------------------------------------------------------------------
 
+class D12Machine
+{
+    // rules ordering:   LSB->MSB   L2 L1 X R1 R2 
+    bool rules[32];
+    vector<bool> pots;
+    int numnegpots;
+    int numextrapots;
+
+public:
+    int64_t generation;
+
+    D12Machine(const stringlist& input)
+        : numnegpots(0)
+        , numextrapots(0)
+        , generation(0)
+    {
+        auto itin = input.begin();
+
+        // initial state: #....##.#.#.####..#.######..##.#.########..#...##...##...##.#.#...######.###....#...##..#.#....##.##
+        {
+            const string& istate = *itin;
+            auto itc = istate.begin() + 15;
+
+            pots.resize(numnegpots + (istate.end() - itc) + numextrapots, false);
+
+            for (int n=numnegpots; itc != istate.end(); ++itc, ++n)
+            {
+                bool plant = (*itc == '#');
+
+                pots[n] = plant;
+            }
+        }
+        ++itin;
+
+        // skip blank line
+        ++itin;
+
+        // read the rules (assume everything is no pot by default)
+        memset(rules, 0, sizeof(rules));
+        {
+            for (; itin != input.end(); ++itin)
+            {
+                const string& in = *itin;
+
+                // ...## => #
+                int id = 0;
+                int mask = 1;
+                for (int b = 0; b < 5; ++b, mask <<= 1)
+                {
+                    if (in[b] == '#') id |= mask;
+                }
+
+                rules[id] = (in[9] == '#');
+            }
+        }
+    }
+
+    void tick()
+    {
+        ++generation;
+
+        if (pots[0] || pots[1] || pots[2] || pots[3])
+        {
+            pots.insert(pots.begin(), 4, false);
+            numnegpots += 4;
+        }
+        auto numpots = pots.size();
+        if (pots[numpots - 4] || pots[numpots - 3] || pots[numpots - 2] || pots[numpots-1])
+        {
+            pots.push_back(false);
+            pots.push_back(false);
+            pots.push_back(false);
+            pots.push_back(false);
+        }
+
+        numpots = pots.size();
+        vector<bool> npots(numpots, false);
+
+        for (uint32_t i = 2; i < numpots-2; ++i)
+        {
+            int rule = 0;
+            for (int b = 0, m=1; b < 5; ++b, m<<=1)
+            {
+                if (pots[i - 2 + b])
+                    rule |= m;
+            }
+
+            npots[i] = rules[rule];
+        }
+
+        pots.swap(npots);
+    }
+
+    int calcscore() const
+    {
+        int score = 0;
+        for (uint32_t i = 0; i < pots.size(); ++i)
+        {
+            if (pots[i])
+            {
+                score += i - numnegpots;
+            }
+        }
+        return score;
+    }
+
+    friend ostream& operator<<(ostream& os, const D12Machine& m);
+};
+
+ostream& operator<<(ostream& os, const D12Machine& m)
+{
+    os << setfill(' ') << setw(4) << m.generation << setw(1) << ": ";
+    for (auto pot : m.pots)
+    {
+        os << (pot ? '#' : '.');
+    }
+    return os;
+}
+
+
+int day12(const stringlist& input, int64_t generations)
+{
+    D12Machine machine(input);
+
+    //cout << machine << endl;
+    for (int64_t g = 0; g < generations; ++g)
+    {
+        machine.tick();
+        // cout << machine << endl;
+    }
+
+    //cout << machine << endl;
+    return machine.calcscore();
+}
+
+int64_t day12_2(const stringlist& input)
+{
+    D12Machine machine(input);
+
+    //cout << machine << endl;
+    for (int64_t g = 0; g < 80; ++g)
+    {
+        machine.tick();
+        // cout << machine << endl;
+    }
+    //cout << machine << endl;
+    for (int64_t g = 0; g < 10; ++g)
+    {
+        machine.tick();
+        //cout << machine.calcscore() << '/' << machine << endl;
+    }
+
+    int64_t gens = 50ll * 1000ll * 1000ll * 1000ll;
+    int64_t gensleft = gens - machine.generation;
+    int64_t finalscore = gensleft * 15 + machine.calcscore();
+
+    //cout << machine << endl;
+    return finalscore;
+}
+
+// -------------------------------------------------------------------
+
+struct D13Cart
+{
+    int x, y;
+    int vx, vy;
+    char track;
+    int8_t nextchoice;
+
+    D13Cart() {/**/}
+    D13Cart( int x, int y ) : x(x), y(y), vx(0), vy(0) {/**/}
+    D13Cart(int x, int y, char c) : x(x), y(y), nextchoice(0)
+    {
+        switch (c)
+        {
+        case '>': vx = 1; vy = 0; track = '-'; break;
+        case '<': vx =-1; vy = 0; track = '-'; break;
+        case '^': vx = 0; vy =-1; track = '|'; break;
+        case 'v': vx = 0; vy = 1; track = '|'; break;
+        default: _ASSERT(false && "wtf even is this cart?"); break;
+        }
+    }
+
+    void turnleft()
+    {
+        auto ox = vx;
+        vx = vy;
+        vy = -ox;
+    }
+    void turnright()
+    {
+        auto ox = vx;
+        vx = -vy;
+        vy = ox;
+    }
+    void turnwherever()
+    {
+        switch (nextchoice)
+        {
+        case 0: turnleft(); break;
+        case 1: /* straight on */  break;
+        case 2: turnright(); break;
+        }
+        nextchoice = (nextchoice + 1) % 3;
+    }
+
+    void stop()
+    {
+        vx = vy = 0;
+    }
+    bool isstopped() const
+    {
+        return (vx == 0 && vy == 0);
+    }
+
+    bool operator==(const D13Cart& o) const
+    {
+        if (x == o.x && y == o.y)
+            return true;
+
+        return false;
+    }
+    char getAvatar() const
+    {
+        if (vx > 0) return '>';
+        if (vx < 0) return '<';
+        if (vy > 0) return 'v';
+        if (vy < 0) return '^';
+        return 'X';
+    }
+};
+ostream& operator<<(ostream& os, const D13Cart& cart)
+{
+    os << cart.getAvatar() << ' ' << cart.x << ',' << cart.y;
+    return os;
+}
+
+class D13System
+{
+    uint32_t width, height;
+    char* map;
+    vector<D13Cart> carts;
+
+    D13Cart crashedcart;
+
+public:
+
+    D13System(const stringlist& input) : crashedcart( -1, -1 )
+    {
+        // find dimensions
+        width = 0;
+        for (auto& line : input)
+            width = max(width, line.length());
+        height = input.size();
+        map = new char[width * height];
+        memset(map, ' ', width * height);
+
+        int y = 0;
+        for (auto& line : input)
+        {
+            char* mapc = map + y * width;
+            for (uint32_t x = 0; x < line.length(); ++x, ++mapc)
+            {
+                char c = line[x];
+                *mapc = c;
+                
+                if (c == '>' || c == '<' || c == 'v' || c == '^')
+                    carts.emplace_back(x, y, c);
+            }
+            ++y;
+        }
+    }
+    ~D13System()
+    {
+        delete[] map;
+    }
+
+    const bool crash() const
+    {
+        return crashedcart.x >= 0;
+    }
+
+    const D13Cart& getCrash() const
+    {
+        _ASSERT(crash());
+        return crashedcart;
+    }
+
+    const size_t numcarts() const
+    {
+        return carts.size();
+    }
+    const D13Cart& getLastCartStanding() const
+    {
+        _ASSERT(carts.size() == 1);
+        return carts[0];
+    }
+
+    void cleanupCrash()
+    {
+        _ASSERT(crash());
+
+        for (auto it = carts.begin(); it != carts.end(); ++it)
+        {
+            if (it->isstopped())
+                map[it->x + it->y*width] = it->track;
+        }
+
+        carts.erase(remove_if(carts.begin(), carts.end(), [](auto& cart)->bool {return cart.isstopped(); }), carts.end());
+
+        crashedcart.x = -1;
+        crashedcart.y = -1;
+    }
+
+
+    void tick();
+};
+
+void D13System::tick()
+{
+    for (auto& cart : carts)
+    {
+        if (cart.isstopped())
+            continue;
+
+        // return the track to the previous state
+        map[cart.x + cart.y * width] = cart.track;
+
+        auto nx = cart.x + cart.vx;
+        auto ny = cart.y + cart.vy;
+        _ASSERT(nx >= 0);
+        _ASSERT(ny >= 0);
+        _ASSERT(nx < (int)width);
+        _ASSERT(ny < (int)height);
+        char nc = map[nx + ny * width];
+        if (nc == '-' || nc == '|')
+        {
+            // continue straight
+        }
+        else if (nc == '/')
+        {
+            if (cart.vy < 0 || cart.vy > 0)
+                cart.turnright();
+            else
+                cart.turnleft();
+        }
+        else if (nc == '\\')
+        {
+            if (cart.vy < 0 || cart.vy > 0)
+                cart.turnleft();
+            else
+                cart.turnright();
+        }
+        else if (nc == '+')
+        {
+            cart.turnwherever();
+        }
+        else if (nc == '<' || nc == '>' || nc == '^' || nc == 'v' || nc == 'X')
+        {
+            // CRASH!
+            crashedcart = D13Cart(nx, ny, cart.getAvatar());
+            cart.track = nc;
+            cart.x = nx;
+            cart.y = ny;
+            cart.stop();
+
+            auto other = find_if(carts.begin(), carts.end(), [&](const D13Cart& c)->bool { return cart == c && (&c != &cart); });
+            _ASSERT(other != carts.end());
+            _ASSERT(!other->isstopped());
+            other->stop();
+
+            cart.track = other->track;
+
+            //map[nx + ny * width] = 'X';
+            continue;
+        }
+        else
+        {
+            _ASSERT(0 && "WTF is up with this track?");
+        }
+
+        cart.track = nc;
+        cart.x = nx;
+        cart.y = ny;
+        map[nx + ny * width] = cart.getAvatar();
+    }
+
+    // make sure we process carts in the correct order - top->bottom, left->right
+    sort(carts.begin(), carts.end(), [](const D13Cart& a, const D13Cart& b) -> bool
+        {
+            if (a.y < b.y) return true;
+            if (a.y == b.y && a.x < b.x) return true;
+            return false;
+        });
+}
+
+
+D13Cart day13(const stringlist& input)
+{
+    D13System system(input);
+
+    while (!system.crash())
+    {
+        system.tick();
+    }
+
+    return system.getCrash();
+}
+
+D13Cart day13_2(const stringlist& input)
+{
+    D13System system(input);
+
+    while (system.numcarts() > 1)
+    {
+        while (!system.crash())
+        {
+            system.tick();
+        }
+        system.cleanupCrash();
+    }
+
+    return system.getLastCartStanding();
+}
+
+
+
+// -------------------------------------------------------------------
+
 int main()
 {
     initcolours();
@@ -1183,6 +1613,9 @@ int main()
 
     nononoD(day9(string("466 players; last marble is worth 7143600 points")));
 
+    skip("because it needs fancy graphics");
+    skip("again with graphics");
+
     test(-5, d11_calcpower(57, 122, 79));
     test(0, d11_calcpower(39, 217, 196));
     test(4, d11_calcpower(71, 101, 153));
@@ -1193,6 +1626,16 @@ int main()
     nest(D11Point{ 90,269,16 }, day11_2(18));
     nest(D11Point{ 232,251,12 }, day11_2(42));
     nonono(day11_2(4455));
+
+    test(325, day12(LOAD(12t), 20));
+    gogogo(day12(LOAD(12), 20));
+    gogogo(day12_2(LOAD(12)));
+
+    test(D13Cart(7, 3), day13(LOAD(13t)));
+    gogogo(day13(LOAD(13)));
+
+    test(D13Cart(6, 4), day13_2(LOAD(13t2)));
+    gogogo(day13_2(LOAD(13)));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

@@ -148,6 +148,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="day15.cpp" />
     <ClCompile Include="harness.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -159,6 +160,13 @@
     <Text Include="data\day12t.txt" />
     <Text Include="data\day13t.txt" />
     <Text Include="data\day13t2.txt" />
+    <Text Include="data\day15.txt" />
+    <Text Include="data\day15t.txt" />
+    <Text Include="data\day15t2.txt" />
+    <Text Include="data\day15t3.txt" />
+    <Text Include="data\day15t4.txt" />
+    <Text Include="data\day15t5.txt" />
+    <Text Include="data\day15t6.txt" />
     <Text Include="data\day2.txt" />
     <Text Include="data\day3.txt" />
     <Text Include="data\day4.txt" />
@@ -175,6 +183,7 @@
     <Image Include="..\sparkle.gif" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="day15.h" />
     <ClInclude Include="harness.h" />
   </ItemGroup>
   <ItemGroup>

@@ -52,6 +52,16 @@ void skip( const char* message )
 }
 
 
+void jumptoday(int day)
+{
+    cout << YELLOW << "SKIPPING" << RESET << " to day " << day << YELLOW << "/\\/\\/\\/\\/\\/\\/\\/\\/\n" << RESET << endl;
+    cout << "\n" << GARLAND(4) << "\n" << endl;
+    gday = day;
+    gpart = 1;
+    gtest = 1;
+}
+
+
 // -------------------------------------------------------------------
 
 const WORD kwhite = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;

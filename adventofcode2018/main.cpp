@@ -9,10 +9,7 @@
 #include <unordered_set>
 #include <vector>
 
-
-#define READ(str)       stringlist::fromstring(str)
-#define LOAD(day)       stringlist::fromfile("day" #day ".txt")
-#define LOADSTR(day)    stringfromfile("day" #day ".txt")
+#include "day15.h"
 
 
 // -------------------------------------------------------------------
@@ -1623,7 +1620,7 @@ int main()
     srand((unsigned int)time(0));
 
     cout << GARLAND(2) << "  advent of code 2018  " << GARLAND(2) << endl;
-    
+
     test(3, day1(READ("+1\n-2\n+3\n+1")));
     test(3, day1(READ("+1\n+1\n+1")));
     test(0, day1(READ("+1\n+1\n-2")));
@@ -1727,6 +1724,21 @@ int main()
     test(18, day14_2("92510"));
     test(2018, day14_2("59414"));
     nononoD(day14_2("652601"));
+
+    test(27730, day15(LOAD(15t3)));
+    test(36334, day15(LOAD(15t2)));
+    test(39514, day15(LOAD(15t)));
+    test(27755, day15(LOAD(15t4)));
+    test(28944, day15(LOAD(15t5)));
+    test(18740, day15(LOAD(15t6)));
+    nononoD(day15(LOAD(15)));
+
+    test(4988, day15_2(LOAD(15t3)));
+    test(31284, day15_2(LOAD(15t)));
+    test(3478, day15_2(LOAD(15t4)));
+    test(6474, day15_2(LOAD(15t5)));
+    test(1140, day15_2(LOAD(15t6)));
+    nonono(day15_2(LOAD(15)));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

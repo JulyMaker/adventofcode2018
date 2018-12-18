@@ -121,6 +121,11 @@ inline string stringfromfile(const string& fname)
 }
 
 
+#define READ(str)       stringlist::fromstring(str)
+#define LOAD(day)       stringlist::fromfile("day" #day ".txt")
+#define LOADSTR(day)    stringfromfile("day" #day ".txt")
+
+
 
 // ----- day harness -----
 extern int gday;
@@ -168,6 +173,8 @@ void gogogo(TResult result)
 }
 
 void skip(const char* message = "cos it's really slow!");
+
+void jumptoday(int day);
 
 #define nest(...)
 #define nonono(expr) skip()

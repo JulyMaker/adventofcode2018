@@ -17,6 +17,9 @@
     <ClCompile Include="harness.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="day15.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="data\day1.txt">
@@ -70,6 +73,27 @@
     <Text Include="data\day13t2.txt">
       <Filter>Resource Files</Filter>
     </Text>
+    <Text Include="data\day15.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="data\day15t.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="data\day15t2.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="data\day15t3.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="data\day15t4.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="data\day15t5.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="data\day15t6.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\festiveaf.png">
@@ -81,6 +105,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="harness.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="day15.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1614,6 +1614,378 @@ int day14_2(const char* input)
 
 // -------------------------------------------------------------------
 
+struct D16Regs
+{
+    int r[4];
+
+    D16Regs()
+    {
+        fill(r, r + 4, 0);
+    }
+    D16Regs(const string& def)
+    {
+        istringstream is(def);
+        is.ignore(1000, '[');
+        char comma;
+        is >> skipws >> r[0] >> comma >> r[1] >> comma >> r[2] >> comma >> r[3];
+    }
+
+    bool operator==(const D16Regs& o) const
+    {
+        for (int i = 0; i < 4; ++i)
+            if (r[i] != o.r[i])
+                return false;
+        return true;
+    }
+    bool operator!=(const D16Regs& o) const
+    {
+        for (int i = 0; i < 4; ++i)
+            if (r[i] != o.r[i])
+                return true;
+        return false;
+    }
+};
+
+struct D16Instr
+{
+    int op;
+    int a, b, c;
+
+    D16Instr(int op, int a, int b, int c) : op(op), a(a), b(b), c(c)
+    { /**/ }
+    D16Instr(const string& def)
+    {
+        istringstream is(def);
+        is >> skipws >> op >> a >> b >> c;
+        _ASSERT(a >= 0 && a < 4);
+        _ASSERT(b >= 0 && b < 4);
+        _ASSERT(c >= 0 && c < 4);
+    }
+
+    D16Regs addr(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = in.r[a] + in.r[b];
+        return out;
+    }
+    D16Regs addi(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = in.r[a] + b;
+        return out;
+    }
+    D16Regs mulr(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = in.r[a] * in.r[b];
+        return out;
+    }
+    D16Regs muli(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = in.r[a] * b;
+        return out;
+    }
+    D16Regs banr(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = in.r[a] & in.r[b];
+        return out;
+    }
+    D16Regs bani(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = in.r[a] & b;
+        return out;
+    }
+    D16Regs borr(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = in.r[a] | in.r[b];
+        return out;
+    }
+    D16Regs bori(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = in.r[a] | b;
+        return out;
+    }
+    D16Regs setr(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = in.r[a];
+        return out;
+    }
+    D16Regs seti(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = a;
+        return out;
+    }
+    D16Regs gtir(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = (a > in.r[b]) ? 1 : 0;
+        return out;
+    }
+    D16Regs gtri(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = (in.r[a] > b) ? 1 : 0;
+        return out;
+    }
+    D16Regs gtrr(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = (in.r[a] > in.r[b]) ? 1 : 0;
+        return out;
+    }
+    D16Regs eqir(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = (a == in.r[b]) ? 1 : 0;
+        return out;
+    }
+    D16Regs eqri(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = (in.r[a] == b) ? 1 : 0;
+        return out;
+    }
+    D16Regs eqrr(const D16Regs& in) 
+    {
+        D16Regs out = in;
+        out.r[c] = (in.r[a] == in.r[b]) ? 1 : 0;
+        return out;
+    }
+};
+
+
+ostream& operator<<(ostream& os, const D16Regs& regs)
+{
+    os << "r0: " << regs.r[0] << "  r1: " << regs.r[1] << "  r2: " << regs.r[2] << "  r3: " << regs.r[3];
+    return os;
+}
+ostream& operator<<(ostream& os, const D16Instr& ins)
+{
+    os << '<' << ins.op << ">  " << ins.a << ", " << ins.b << "  ->  " << ins.c;
+    return os;
+}
+
+
+
+int day16(const stringlist& input)
+{
+    int numtriples = 0;
+
+    for (auto itline = input.begin(); itline != input.end(); ++itline)
+    {
+        // give up when we hit a double newline
+        if (itline->empty())
+            break;
+
+        D16Regs before(*itline);
+        ++itline;
+        D16Instr instr(*itline);
+        ++itline;
+        D16Regs after(*itline);
+        ++itline;
+
+        int numpossibles = 0;
+        if (instr.addr(before) == after) ++numpossibles;
+        if (instr.addi(before) == after) ++numpossibles;
+        if (instr.mulr(before) == after) ++numpossibles;
+        if (instr.muli(before) == after) ++numpossibles;
+        if (instr.banr(before) == after) ++numpossibles;
+        if (instr.bani(before) == after) ++numpossibles;
+        if (instr.borr(before) == after) ++numpossibles;
+        if (instr.bori(before) == after) ++numpossibles;
+        if (instr.setr(before) == after) ++numpossibles;
+        if (instr.seti(before) == after) ++numpossibles;
+        if (instr.gtir(before) == after) ++numpossibles;
+        if (instr.gtri(before) == after) ++numpossibles;
+        if (instr.gtrr(before) == after) ++numpossibles;
+        if (instr.eqir(before) == after) ++numpossibles;
+        if (instr.eqri(before) == after) ++numpossibles;
+        if (instr.eqrr(before) == after) ++numpossibles;
+
+        if (numpossibles >= 3)
+            ++numtriples;
+    }
+
+    return numtriples;
+}
+
+class we_sussed_it : public exception  { /**/ };
+
+typedef D16Regs(__thiscall D16Instr::* d16_instr_fn)(const D16Regs &);
+typedef vector<pair<const char*, d16_instr_fn>> d16_instr_possibles;
+typedef vector<d16_instr_possibles> d16_possibles;
+
+ostream& operator<<(ostream& os, const d16_possibles& possibles)
+{
+    for (int i = 0; i < 16; ++i)
+    {
+        const auto& idposs = possibles[i];
+        cout << setw(2) << i << "  =>  ";
+
+        for (auto& poss : idposs)
+        {
+            if (idposs.size() > 1 && &poss != &idposs.front())
+                cout << " | ";
+
+            cout << poss.first;
+        }
+        cout << '\n';
+    }
+
+    return os;
+}
+
+
+d16_instr_possibles::iterator d16_ruleout(d16_possibles& possibles, int id, const d16_instr_possibles::value_type& itop)
+{
+    // take a copy of the op we're erasing or we get ourselves into a right tizzy
+    auto notop = itop;
+    auto& idposs = possibles[id];
+    auto itfound = find(idposs.begin(), idposs.end(), notop);
+    if (itfound != idposs.end())
+    {
+        _ASSERT(idposs.size() != 1);
+        itfound = idposs.erase(itfound);
+    }
+    else
+        return idposs.end();
+
+    if (idposs.size() == 1)
+    {
+        // rule that op out of every other id
+        auto foundop = idposs.front();
+
+        bool solved = true;
+        for (int i = 0; i < 16; ++i)
+        {
+            if (id != i)
+            {
+                d16_ruleout(possibles, i, foundop);
+                if (possibles[i].size() > 1)
+                    solved = false;
+            }
+        }
+
+        // because this can get recursive, our iterator can shift, so we just restart
+        itfound = idposs.begin();
+
+        if (solved)
+            throw we_sussed_it();
+    }
+
+    return itfound;
+}
+
+
+int day16_2(const stringlist& input)
+{
+
+    d16_possibles possibles(16);
+    for (int i = 0; i < 16; ++i)
+    {
+#define INSTR(opcode)   possibles[i].push_back( make_pair( #opcode, &D16Instr::opcode ))
+
+        INSTR(addr);
+        INSTR(addi);
+        INSTR(mulr);
+        INSTR(muli);
+        INSTR(banr);
+        INSTR(bani);
+        INSTR(borr);
+        INSTR(bori);
+        INSTR(setr);
+        INSTR(seti);
+        INSTR(gtir);
+        INSTR(gtri);
+        INSTR(gtrr);
+        INSTR(eqir);
+        INSTR(eqri);
+        INSTR(eqrr);
+
+#undef INSTR
+        _ASSERT(possibles[i].size() == 16);
+    }
+    
+    bool solved = false;
+    auto itline = input.begin();
+    try
+    {
+        for (; itline != input.end(); ++itline)
+        {
+            // give up when we hit a double newline
+            if (itline->empty())
+                break;
+
+            D16Regs before(*itline);
+            ++itline;
+            D16Instr instr(*itline);
+            ++itline;
+            D16Regs after(*itline);
+            ++itline;
+
+            // go through all of the possible operations we have left for this instruction
+            auto& id_poss = possibles[instr.op];
+            for (auto it = id_poss.begin(); it != id_poss.end(); )
+            {
+                auto name = it->first;
+                auto fn = it->second;
+                if ((instr.*fn)(before) != after)
+                {
+                    it = d16_ruleout(possibles, instr.op, *it);
+                }
+                else
+                    ++it;
+            }
+        }
+    }
+    catch (we_sussed_it&)
+    {
+        solved = true;
+    }
+
+    if (!solved)
+    {
+        cerr << "couldn't crack it T_T" << endl;
+        return -1;
+    }
+
+    // skip to the start of the program
+    for (; itline != input.end(); ++itline)
+    {
+        if (itline->empty())
+            continue;
+
+        if (itline->front() == 'B')
+        {
+            ++itline;
+            ++itline;
+            ++itline;
+        }
+        else
+            break;
+    }
+
+    // EXECUTE
+    D16Regs regs;
+    for (; itline != input.end(); ++itline)
+    {
+        D16Instr instr(*itline);
+        auto fn = possibles[instr.op].front().second;
+        regs = ((instr.*fn)(regs));
+    }
+
+    return regs.r[0];
+}
+
+// -------------------------------------------------------------------
+
 int main()
 {
     initcolours();
@@ -1739,6 +2111,11 @@ int main()
     test(6474, day15_2(LOAD(15t5)));
     test(1140, day15_2(LOAD(15t6)));
     nonono(day15_2(LOAD(15)));
+
+    test(1, day16(READ("Before: [3, 2, 1, 1]\n9 2 1 2\nAfter:  [3, 2, 2, 1]\n\n\n")));
+    gogogo(day16(LOAD(16)));
+
+    gogogo(day16_2(LOAD(16)));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

@@ -1986,12 +1986,16 @@ int day16_2(const stringlist& input)
 
 // -------------------------------------------------------------------
 
+
+// -------------------------------------------------------------------
+
 int main()
 {
     initcolours();
     srand((unsigned int)time(0));
 
     cout << GARLAND(2) << "  advent of code 2018  " << GARLAND(2) << endl;
+ 
 
     test(3, day1(READ("+1\n-2\n+3\n+1")));
     test(3, day1(READ("+1\n+1\n+1")));
@@ -2116,6 +2120,7 @@ int main()
     gogogo(day16(LOAD(16)));
 
     gogogo(day16_2(LOAD(16)));
+
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

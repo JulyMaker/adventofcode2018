@@ -87,7 +87,11 @@ public:
 
     static stringlist fromfile(const string& fname)
     {
-        ifstream ifs("data/" + fname);
+        string fn = "data/" + fname;
+        ifstream ifs(fn);
+        if (!ifs)
+            throw string("couldn't open file " + fn);
+
         return fromistream(ifs);
     }
 

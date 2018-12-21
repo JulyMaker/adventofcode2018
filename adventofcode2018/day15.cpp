@@ -167,10 +167,10 @@ public:
 
 Battle::Battle(const stringlist& input, int elfpower): ndeadelves(0)
 {
-    height = input.size();
+    height = (uint32_t)input.size();
     width = 0;
     for (auto& line : input)
-        width = max(width, line.length());
+        width = max(width, (uint32_t)line.length());
 
     map = new char[width * height];
     memset(map, ' ', width * height);

@@ -91,9 +91,9 @@ int day2(const stringlist& lines)
 }
 
 // returns the index of characters that are mismatched, or <0 if strings don't differ by a single char
-int d2_compare(const string& a, const string& b)
+ptrdiff_t d2_compare(const string& a, const string& b)
 {
-    int diffpos = -1;
+    ptrdiff_t diffpos = -1;
 
     auto ita = a.begin();
     auto itb = b.begin();
@@ -119,7 +119,7 @@ string day2_2(const stringlist& lines)
         const string& teststr = *itline;
         for (auto ittest = lines.begin(); ittest != itline; ++ittest)
         {
-            int diff = d2_compare(teststr, *ittest);
+            auto diff = d2_compare(teststr, *ittest);
             if (diff < 0)
                 continue;
 
@@ -388,7 +388,7 @@ int day4_2(stringlist& input)
         {
             guard = g_mins.first;
             sleepiness = *itsleepy;
-            minute = distance(g_mins.second.begin(), itsleepy);
+            minute = (int)distance(g_mins.second.begin(), itsleepy);
         }
     }
 
@@ -436,7 +436,7 @@ int day5(const string& s)
         }
     }
 
-    int length = (*sout) ? itbackch - sout + 1 : 0;
+    int length = (*sout) ? (int)(itbackch - sout + 1) : 0;
 
     delete[] sout;
     return length;
@@ -1358,8 +1358,8 @@ public:
         // find dimensions
         width = 0;
         for (auto& line : input)
-            width = max(width, line.length());
-        height = input.size();
+            width = max(width, (uint32_t)line.length());
+        height = (uint32_t)input.size();
         map = new char[width * height];
         memset(map, ' ', width * height);
 
@@ -1584,7 +1584,7 @@ bool d14_addrecipe(int r, vector<char>& recipes, const string& sought, uint32_t 
 int day14_2(const char* input)
 {
     string sought(input);
-    uint32_t soughtlen = sought.size();
+    uint32_t soughtlen = (uint32_t)sought.size();
     vector<char> recipes{ '3', '7' };
     recipes.reserve(1000000);
 
@@ -1599,11 +1599,11 @@ int day14_2(const char* input)
         if (newscore >= 10)
         {
             if (d14_addrecipe(newscore / 10, recipes, sought, soughtlen))
-                return recipes.size() - soughtlen;
+                return (uint32_t)recipes.size() - soughtlen;
         }
 
         if (d14_addrecipe(newscore % 10, recipes, sought, soughtlen))
-            return recipes.size() - soughtlen;
+            return (uint32_t)recipes.size() - soughtlen;
 
         elves[0] = (elves[0] + 1 + r0score) % recipes.size();
         elves[1] = (elves[1] + 1 + r1score) % recipes.size();
@@ -1986,6 +1986,142 @@ int day16_2(const stringlist& input)
 
 // -------------------------------------------------------------------
 
+inline char d18_read(uint32_t x, uint32_t y, const char* land, uint32_t w, uint32_t h)
+{
+    if (x >= w)
+        return ' ';
+    return land[x + y*w];
+}
+
+int day18(const stringlist& input, int64_t minutes)
+{
+    uint32_t w = (uint32_t)input.front().length();
+    uint32_t h = (uint32_t)input.size();
+    char* land = new char[w*h];
+    char* row = land;
+    for (auto& line : input)
+    {
+        copy(line.begin(), line.begin() + w, row);
+        row += w;
+    }
+
+    // after 1000, assume it will have settled to a steady state and extrapolate the rest
+    auto procminutes = min(minutes, 1000ll);
+    vector<int> values;
+    values.reserve(procminutes);
+
+    int value = -1;
+    char* flip = new char[w*h];
+    for (int64_t minute = 0; minute < procminutes; ++minute)
+    {
+        char* pout = flip;
+
+        for (uint32_t y = 0; y < h; ++y)
+        {
+            for (uint32_t x = 0; x < w; ++x)
+            {
+                char surrounds[8];
+                char* surrend = surrounds + sizeof(surrounds);
+                char* psurr = surrounds;
+
+                if (y > 0)
+                {
+                    *(psurr++) = d18_read(x - 1, y - 1, land, w, h);
+                    *(psurr++) = d18_read(x, y - 1, land, w, h);
+                    *(psurr++) = d18_read(x + 1, y - 1, land, w, h);
+                }
+                *(psurr++) = d18_read(x - 1, y, land, w, h);
+                *(psurr++) = d18_read(x + 1, y, land, w, h);
+                if (y + 1 < h)
+                {
+                    *(psurr++) = d18_read(x - 1, y + 1, land, w, h);
+                    *(psurr++) = d18_read(x, y + 1, land, w, h);
+                    *(psurr++) = d18_read(x + 1, y + 1, land, w, h);
+                }
+
+                char curr = d18_read(x, y, land, w, h);
+                *pout = curr;
+                if (curr == '.')
+                {
+                    auto ntrees = count(surrounds, psurr, '|');
+                    if (ntrees >= 3)
+                    {
+                        *pout = '|';
+                    }
+                }
+                else if (curr == '|')
+                {
+                    auto nyards = count(surrounds, psurr, '#');
+                    if (nyards >= 3)
+                    {
+                        *pout = '#';
+                    }
+                }
+                else if (curr == '#')
+                {
+                    if ((find(surrounds, psurr, '|') == psurr) ||
+                        (find(surrounds, psurr, '#') == psurr))
+                    {
+                        *pout = '.';
+                    }
+                }
+                
+                ++pout;
+            }
+        }
+
+        swap(land, flip);
+
+        auto ntrees = count(land, land + w*h, '|');
+        auto nyards = count(land, land + w*h, '#');
+        value = (int)(ntrees * nyards);
+        values.push_back(value);
+    }
+
+    // if we're looking to know the result after a long time, find the steady state loop and extrapolate
+    if (minutes > 1000)
+    {
+        // seek out repeated values
+        int steady_loop = -1;
+        for (int loop = 20; loop < procminutes - 1; ++loop)
+        {
+            auto ita = values.rbegin();
+            auto itb = ita + loop;
+            if (*ita == *itb)
+            {
+                bool foundloop = true;
+                auto itend = itb;
+                while (ita != itend)
+                {
+                    ++ita;
+                    ++itb;
+                    if (*ita != *itb)
+                    {
+                        foundloop = false;
+                        break;
+                    }
+                }
+                if (foundloop)
+                {
+                    if (*itend == *(itend + loop))
+                    {
+                        //cout << "*** GOT IT at l=" << loop << endl;
+                        steady_loop = loop;
+                        break;
+                    }
+                }
+            }
+        }
+
+        _ASSERT(steady_loop > 0);
+        int64_t remain = (minutes - procminutes) % steady_loop;
+        value = *(values.rbegin() + (steady_loop - remain));
+    }
+
+    delete[] flip;
+    delete[] land;
+    return value;
+}
 
 // -------------------------------------------------------------------
 
@@ -1996,7 +2132,6 @@ int main()
 
     cout << GARLAND(2) << "  advent of code 2018  " << GARLAND(2) << endl;
  
-
     test(3, day1(READ("+1\n-2\n+3\n+1")));
     test(3, day1(READ("+1\n+1\n+1")));
     test(0, day1(READ("+1\n+1\n-2")));
@@ -2121,6 +2256,14 @@ int main()
 
     gogogo(day16_2(LOAD(16)));
 
+    skip("because it needs fancy graphics");
+    skip("actually it didn't, but i like doing them");
+    
+    //jumptoday(18);
+
+    test(1147, day18(LOAD(18t), 10));
+    gogogo(day18(LOAD(18), 10));
+    gogogo(day18(LOAD(18), 1000*1000*1000));
 
     // animate snow falling behind the characters in the console until someone presses a key
     return twinkleforever();

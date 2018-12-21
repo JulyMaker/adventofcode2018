@@ -112,15 +112,6 @@ int day17(const stringlist& input)
     int nwetted = 1;
     bool printed = false;
     do {
-        //if (!window.IsKeyDown(Pixie::Key_Space))
-        //{
-        //    Sleep(100);
-        //    if (!window.Update())
-        //        break;
-        //    wetted = true; 
-        //    continue;
-        //}
-
         wetted = false;
 
         // go from the bottom up, omitting the top line
@@ -200,6 +191,7 @@ int day17(const stringlist& input)
         // now the water's got everywhere by flowing, find where it's settled
 
         // go from the bottom up, omitting the top & bottom lines
+        // FIXME: again, this only needs to happen on rows we just added water to
         for (uint32_t ly = height - 2; ly > 0; --ly)
         {
             auto currbegin = map + (ly*width);
@@ -265,7 +257,7 @@ int day17(const stringlist& input)
             cout << GARLAND(4) << " result: " << nwetted << " " << GARLAND(4) << endl;
             cout << "\n\naquifers = " << count(map, map + width*height, '~') << endl;
 
-            ofstream ofs("dump.txt");
+            ofstream ofs("day17-final.txt");
             for (uint32_t y = 0; y < height; ++y)
             {
                 ofs.write(map + y*width, width);

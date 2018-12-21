@@ -170,6 +170,8 @@
     <Text Include="data\day16.txt" />
     <Text Include="data\day17.txt" />
     <Text Include="data\day17t.txt" />
+    <Text Include="data\day18.txt" />
+    <Text Include="data\day18t.txt" />
     <Text Include="data\day2.txt" />
     <Text Include="data\day3.txt" />
     <Text Include="data\day4.txt" />
